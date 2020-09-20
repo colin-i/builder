@@ -6,9 +6,8 @@
 #pragma GCC diagnostic pop
 #else
 #include "inc/gtk.h"
-#endif
-
 #define NULL 0
+#endif
 
 static void
 activate (GtkApplication* app)
