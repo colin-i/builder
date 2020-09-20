@@ -1,5 +1,14 @@
 
+#ifndef HEADS
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations" //extern code
 #include <gtk/gtk.h>
+#pragma GCC diagnostic pop
+#else
+#include "inc/gtk.h"
+#endif
+
+#define NULL 0
 
 static void
 activate (GtkApplication* app)
