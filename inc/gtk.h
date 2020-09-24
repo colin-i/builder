@@ -1,4 +1,7 @@
 
+//"stdlib.h"
+#define EXIT_SUCCESS 0
+
 typedef char gchar;
 typedef unsigned long gulong;
 typedef void* gpointer;
