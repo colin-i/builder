@@ -37,3 +37,4 @@ GtkWidget* gtk_box_new (GtkOrientation orientation,int spacing);
 GtkWidget* gtk_button_new_with_label (const char *label);
 void gtk_widget_show (GtkWidget *widget);
 void gtk_window_set_child (GtkWindow *window,GtkWidget *child);
+void gtk_window_set_title (GtkWindow *window, const char *title);

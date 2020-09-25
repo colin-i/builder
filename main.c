@@ -29,6 +29,7 @@ static void save_json(struct stk*st){
 }
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
+	gtk_window_set_title((GtkWindow*)window,"Builder");
 	GtkWidget*box=gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
 	GtkWidget*b;
 	b=gtk_button_new_with_label("Open");
