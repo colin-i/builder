@@ -1,6 +1,4 @@
 
-typedef int gint;
-typedef gint gboolean;
 __extension__ typedef signed long long gint64;
 
 typedef struct _JsonGenerator JsonGenerator;

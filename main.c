@@ -9,6 +9,7 @@
 #include "inc/gtk.h"
 #include "inc/json.h"
 #define NULL ((void*)0)
+enum{FALSE=0!=0,TRUE=1==1};
 #endif
 
 struct stk{
@@ -46,7 +47,15 @@ static void activate(GtkApplication* app,struct stk*st){
 	b=gtk_button_new_with_label("Exit");
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (g_application_quit),app,NULL,G_CONNECT_SWAPPED);
-	gtk_window_set_child((GtkWindow*)window, box);
+	GtkWidget*f=gtk_frame_new(NULL);
+	GtkWidget*bx=gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+	gtk_box_append((GtkBox*)bx,f);
+	gtk_box_append((GtkBox*)bx,box);
+	gtk_window_set_child((GtkWindow*)window, bx);
+	gtk_widget_set_hexpand(f,TRUE);
+	gtk_widget_set_vexpand(f,TRUE);
+	gtk_widget_set_halign(box,GTK_ALIGN_CENTER);
+	gtk_widget_set_valign(box,GTK_ALIGN_BASELINE);
 	gtk_widget_show(window);
 }
 static int
