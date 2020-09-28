@@ -39,23 +39,25 @@ static void help_popup(struct stk*st){
 	//
 	GtkWidget*text = gtk_text_view_new ();
 	gtk_text_view_set_editable((GtkTextView*)text, FALSE);
-	GtkWidget *scrolled_window = gtk_scrolled_window_new ();
-	gtk_box_append ((GtkBox*)scrolled_window,text);
 	GtkTextBuffer *text_buffer = gtk_text_view_get_buffer ((GtkTextView*)text);
 	gtk_text_buffer_set_text (text_buffer,help_text,sizeof(help_text)-1);
 	//
 	GtkTextIter it;
 	gtk_text_buffer_get_end_iter(text_buffer,&it);
-	gtk_text_buffer_insert(text_buffer,&it,"\n\nOptions:\n",-1);
-	for(size_t i=0;i<number_of_options;i++){
-		if(i>0)gtk_text_buffer_insert(text_buffer,&it," ",1);
+	gtk_text_buffer_insert(text_buffer,&it,"\n\nOptions:",-1);
+	for(unsigned int i=0;i<number_of_options;i++){
+		gtk_text_buffer_insert(text_buffer,&it,"\n",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options[i].name,-1);
 		gtk_text_buffer_insert(text_buffer,&it,"=",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options[i].help,-1);
 	}
 	//
 	GtkWidget*box=gtk_dialog_get_content_area((GtkDialog*)dialog);
+	GtkWidget *scrolled_window = gtk_scrolled_window_new ();
+	gtk_scrolled_window_set_child ((GtkScrolledWindow*)scrolled_window,text);
 	gtk_box_append((GtkBox*)box, scrolled_window);
+	gtk_widget_set_hexpand(scrolled_window,TRUE);
+	gtk_widget_set_vexpand(scrolled_window,TRUE);
 	gtk_widget_show (dialog);
 }
 static void save_json(struct stk*st){
