@@ -1,4 +1,4 @@
 # Builder
 More to come later.\
-Build code for Linux and Android.\
-GTK4 required.
+GTK4 required.\
+Build code for Android(java) and c gtk at linux pc.

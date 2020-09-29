@@ -85,6 +85,9 @@ static void activate(GtkApplication* app,struct stk*st){
 	gtk_window_set_title((GtkWindow*)window,"Builder");
 	GtkWidget*box=gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
 	GtkWidget*b;
+	b=gtk_button_new_with_label("Build");
+	gtk_box_append((GtkBox*)box,b);
+	g_signal_connect_data (b, "clicked",NULL,NULL,NULL,(GConnectFlags)0);
 	b=gtk_button_new_with_label("Save");
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (save_json),st,NULL,G_CONNECT_SWAPPED);
