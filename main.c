@@ -8,6 +8,7 @@
 #else
 #include "inc/gtk.h"
 #include "inc/json.h"
+#include "inc/unistd.h"
 #define NULL ((void*)0)
 enum{FALSE=0!=0,TRUE=1==1};
 #endif
@@ -16,14 +17,17 @@ struct option{
 	char*name;
 	char*help;
 };
-#define number_of_options 3
+#define number_of_options 4
+#define number_of_options_proj 1
 struct stk{
 	char*file;
 	JsonParser*json;
 	struct option options[number_of_options];
+	struct option options_proj[number_of_options_proj];
 	GtkWindow*main_win;
 };
-enum{width_id,height_id,file_id};
+enum{width_id,height_id,folder_id,file_id};
+enum{comp_id};
 #define help_text "Launch the program with the file options.\n\
 e.g. builder example.json"
 
@@ -44,12 +48,19 @@ static void help_popup(struct stk*st){
 	//
 	GtkTextIter it;
 	gtk_text_buffer_get_end_iter(text_buffer,&it);
-	gtk_text_buffer_insert(text_buffer,&it,"\n\nOptions:",-1);
+	gtk_text_buffer_insert(text_buffer,&it,"\n\nMain options:",-1);
 	for(unsigned int i=0;i<number_of_options;i++){
 		gtk_text_buffer_insert(text_buffer,&it,"\n",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options[i].name,-1);
 		gtk_text_buffer_insert(text_buffer,&it,"=",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options[i].help,-1);
+	}
+	gtk_text_buffer_insert(text_buffer,&it,"\n\nProject options:",-1);
+	for(unsigned int i=0;i<number_of_options_proj;i++){
+		gtk_text_buffer_insert(text_buffer,&it,"\n",1);
+		gtk_text_buffer_insert(text_buffer,&it,st->options_proj[i].name,-1);
+		gtk_text_buffer_insert(text_buffer,&it,"=",1);
+		gtk_text_buffer_insert(text_buffer,&it,st->options_proj[i].help,-1);
 	}
 	//
 	GtkWidget*box=gtk_dialog_get_content_area((GtkDialog*)dialog);
@@ -75,6 +86,7 @@ static void main_file(struct stk*st,GtkWidget*window){
 	int width = json_object_get_int_member(object, st->options[width_id].name);
 	int height = json_object_get_int_member(object, st->options[height_id].name);
 	gtk_window_set_default_size ((GtkWindow*) window, width, height);
+	chdir(json_object_get_string_member(object, st->options[folder_id].name));
 	st->file=g_strdup(json_object_get_string_member(object, st->options[file_id].name));
 	json_parser_load_from_file(st->json,st->file,NULL);
 }
@@ -119,7 +131,9 @@ int main(int argc,char**argv){
 	st.file=argv[1];
 	st.options[width_id].name="width";st.options[width_id].help="Window width in pixels";
 	st.options[height_id].name="height";st.options[height_id].help="Window height in pixels";
+	st.options[folder_id].name="folder";st.options[folder_id].help="Project folder";
 	st.options[file_id].name="file";st.options[file_id].help="Parse a program file";
+	st.options_proj[comp_id].name="compiler";st.options_proj[comp_id].help="Compiler format (see example_proj.json)";
 	GtkApplication *app;
 	app = gtk_application_new (NULL, G_APPLICATION_HANDLES_COMMAND_LINE);//G_APPLICATION_FLAGS_NONE
 	g_signal_connect_data (app, "activate", G_CALLBACK (activate), &st, NULL, (GConnectFlags) 0);

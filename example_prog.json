@@ -1,1 +1,3 @@
-{}
+{
+"compiler";"ecj -source 1.5 -g -d ./obj %s %s"
+}
