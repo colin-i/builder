@@ -8,6 +8,8 @@
 #else
 #include "inc/gtk.h"
 #include "inc/json.h"
+#include "inc/stdlib.h"
+#include "inc/stdio.h"
 #include "inc/unistd.h"
 #define NULL ((void*)0)
 enum{FALSE=0!=0,TRUE=1==1};
@@ -18,16 +20,19 @@ struct option{
 	char*help;
 };
 #define number_of_options 4
-#define number_of_options_proj 1
+#define number_of_options_proj 2
+#define number_of_options_proj_src 2
 struct stk{
 	char*file;
-	JsonParser*json;
+	JsonParser*json;JsonParser*jsonp;
 	struct option options[number_of_options];
 	struct option options_proj[number_of_options_proj];
+	struct option options_proj_src[number_of_options_proj_src];
 	GtkWindow*main_win;
 };
 enum{width_id,height_id,folder_id,file_id};
-enum{comp_id};
+enum{comp_id,srcs_id};
+enum{classp_id,src_id};
 #define help_text "Launch the program with the file options.\n\
 e.g. builder example.json"
 
@@ -48,19 +53,27 @@ static void help_popup(struct stk*st){
 	//
 	GtkTextIter it;
 	gtk_text_buffer_get_end_iter(text_buffer,&it);
-	gtk_text_buffer_insert(text_buffer,&it,"\n\nMain options:",-1);
+	gtk_text_buffer_insert(text_buffer,&it,"\n\nMain options (see example.json):",-1);
 	for(unsigned int i=0;i<number_of_options;i++){
 		gtk_text_buffer_insert(text_buffer,&it,"\n",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options[i].name,-1);
 		gtk_text_buffer_insert(text_buffer,&it,"=",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options[i].help,-1);
 	}
-	gtk_text_buffer_insert(text_buffer,&it,"\n\nProject options:",-1);
+	gtk_text_buffer_insert(text_buffer,&it,"\n\nProject options (see example_proj.json):",-1);
 	for(unsigned int i=0;i<number_of_options_proj;i++){
 		gtk_text_buffer_insert(text_buffer,&it,"\n",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options_proj[i].name,-1);
 		gtk_text_buffer_insert(text_buffer,&it,"=",1);
 		gtk_text_buffer_insert(text_buffer,&it,st->options_proj[i].help,-1);
+		if(i==srcs_id){
+			for(unsigned int j=0;j<number_of_options_proj_src;j++){
+				gtk_text_buffer_insert(text_buffer,&it,"\n",1);
+				gtk_text_buffer_insert(text_buffer,&it,st->options_proj_src[j].name,-1);
+				gtk_text_buffer_insert(text_buffer,&it,"=",1);
+				gtk_text_buffer_insert(text_buffer,&it,st->options_proj_src[j].help,-1);
+			}
+		}
 	}
 	//
 	GtkWidget*box=gtk_dialog_get_content_area((GtkDialog*)dialog);
@@ -74,32 +87,51 @@ static void help_popup(struct stk*st){
 static void save_json(struct stk*st){
 	JsonGenerator *j=json_generator_new ();
 	json_generator_set_root (j, json_parser_get_root(st->json));
-	json_generator_to_file (j, st->file, NULL);
+	JsonNode* root = json_parser_get_root(st->json);
+	JsonObject *object = json_node_get_object(root);
+	json_generator_to_file (j, json_object_get_string_member(object, st->options[file_id].name), NULL);
 	g_object_unref(j);
 }
-static void main_file(struct stk*st,GtkWidget*window){
+static void build_proj(struct stk*st){
+	JsonNode*root = json_parser_get_root(st->jsonp);
+	JsonObject*object = json_node_get_object(root);
+	const gchar*c=json_object_get_string_member(object,st->options_proj[comp_id].name);
+	JsonArray*a=json_object_get_array_member(object,st->options_proj[srcs_id].name);
+	guint n=json_array_get_length(a);
+	for(guint i=0;i<n;i++){
+		JsonObject*s=json_array_get_object_element(a,i);
+		const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[classp_id].name);
+		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
+		int sz=snprintf(NULL,0,c,classpath,src);
+		char*p=(char*)g_malloc(sz+1);
+		sprintf(p,c,classpath,src);
+		system(p);
+		g_free(p);
+	}
+}
+static void main_file(struct stk*st){
 	st->json=json_parser_new();
-	//if
 	json_parser_load_from_file(st->json,st->file,NULL);
 	JsonNode* root = json_parser_get_root(st->json);
 	JsonObject *object = json_node_get_object(root);
 	int width = json_object_get_int_member(object, st->options[width_id].name);
 	int height = json_object_get_int_member(object, st->options[height_id].name);
-	gtk_window_set_default_size ((GtkWindow*) window, width, height);
+	gtk_window_set_default_size (st->main_win, width, height);
 	chdir(json_object_get_string_member(object, st->options[folder_id].name));
-	st->file=g_strdup(json_object_get_string_member(object, st->options[file_id].name));
-	json_parser_load_from_file(st->json,st->file,NULL);
+	st->jsonp=json_parser_new();
+	const gchar*f=json_object_get_string_member(object, st->options[file_id].name);
+	json_parser_load_from_file(st->jsonp,f,NULL);
 }
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
 	st->main_win=(GtkWindow*)window;
-	main_file(st,window);
+	main_file(st);
 	gtk_window_set_title((GtkWindow*)window,"Builder");
 	GtkWidget*box=gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
 	GtkWidget*b;
 	b=gtk_button_new_with_label("Build");
 	gtk_box_append((GtkBox*)box,b);
-	g_signal_connect_data (b, "clicked",NULL,NULL,NULL,(GConnectFlags)0);
+	g_signal_connect_data (b, "clicked",G_CALLBACK (build_proj),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("Save");
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (save_json),st,NULL,G_CONNECT_SWAPPED);
@@ -133,14 +165,17 @@ int main(int argc,char**argv){
 	st.options[height_id].name="height";st.options[height_id].help="Window height in pixels";
 	st.options[folder_id].name="folder";st.options[folder_id].help="Project folder";
 	st.options[file_id].name="file";st.options[file_id].help="Parse a program file";
-	st.options_proj[comp_id].name="compiler";st.options_proj[comp_id].help="Compiler format (see example_proj.json)";
+	st.options_proj[comp_id].name="compiler";st.options_proj[comp_id].help="Compiler format";
+	st.options_proj[srcs_id].name="sources";st.options_proj[srcs_id].help="Sources for the compiler";
+	st.options_proj_src[classp_id].name="classpath";st.options_proj_src[classp_id].help="Classpath at compiler";
+	st.options_proj_src[src_id].name="source";st.options_proj_src[src_id].help="Source at compiler";
 	GtkApplication *app;
 	app = gtk_application_new (NULL, G_APPLICATION_HANDLES_COMMAND_LINE);//G_APPLICATION_FLAGS_NONE
 	g_signal_connect_data (app, "activate", G_CALLBACK (activate), &st, NULL, (GConnectFlags) 0);
 	g_signal_connect_data (app, "command-line", G_CALLBACK (command_line), NULL, NULL, (GConnectFlags) 0);
 	int status=g_application_run ((GApplication*)app, argc, argv);
-	g_object_unref (app);
-	g_free(st.file);
+	g_object_unref(st.jsonp);
 	g_object_unref(st.json);
+	g_object_unref (app);
 	return status;
 }

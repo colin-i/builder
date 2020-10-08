@@ -5,6 +5,8 @@
 typedef char gchar;
 typedef int gint;
 typedef gint gboolean;
+typedef unsigned int gsize;
+typedef unsigned int guint;
 typedef unsigned long gulong;
 typedef void* gpointer;
 
@@ -60,9 +62,9 @@ void g_application_activate (GApplication *application);
 void g_application_quit (GApplication *application);
 int g_application_run (GApplication *application,int argc,char **argv);
 void g_free (gpointer mem);
+gpointer g_malloc(gsize n_bytes);
 void g_object_unref (gpointer object);
 gulong g_signal_connect_data (gpointer instance,const gchar *detailed_signal,GCallback c_handler,gpointer data,GClosureNotify destroy_data,GConnectFlags con);
-gchar * g_strdup ( const gchar *str );
 GtkApplication * gtk_application_new (const gchar *application_id, GApplicationFlags flags);
 GtkWidget * gtk_application_window_new (GtkApplication *application);
 void gtk_box_append (GtkBox *box, GtkWidget *child);

@@ -1,3 +1,10 @@
 {
-"compiler";"ecj -source 1.5 -g -d ./obj %s %s"
+"compiler":"ecj -source 1.5 -g -d ./test/obj %s %s",
+"sources":
+[
+	{
+	"classpath":"-classpath /usr/lib/android-sdk/platforms/android-23/android.jar",
+	"source":"./test/src/example.java"
+	}
+]
 }
