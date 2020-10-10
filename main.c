@@ -20,7 +20,7 @@ struct option{
 	char*help;
 };
 #define number_of_options 4
-#define number_of_options_proj 2
+#define number_of_options_proj 9
 #define number_of_options_proj_src 2
 struct stk{
 	char*file;
@@ -31,7 +31,7 @@ struct stk{
 	GtkWindow*main_win;
 };
 enum{width_id,height_id,folder_id,file_id};
-enum{comp_id,srcs_id};
+enum{cdir_id,comp_id,srcs_id,dfile_id,dex_id,paki_id,pakm_id,pakf_id,pak_id};
 enum{classp_id,src_id};
 #define help_text "Launch the program with the file options.\n\
 e.g. builder example.json"
@@ -95,19 +95,38 @@ static void save_json(struct stk*st){
 static void build_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
 	JsonObject*object = json_node_get_object(root);
+	const gchar*d=json_object_get_string_member(object,st->options_proj[cdir_id].name);
 	const gchar*c=json_object_get_string_member(object,st->options_proj[comp_id].name);
 	JsonArray*a=json_object_get_array_member(object,st->options_proj[srcs_id].name);
 	guint n=json_array_get_length(a);
+	int size=0;char*p=NULL;int ret;
 	for(guint i=0;i<n;i++){
 		JsonObject*s=json_array_get_object_element(a,i);
 		const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[classp_id].name);
 		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
-		int sz=snprintf(NULL,0,c,classpath,src);
-		char*p=(char*)g_malloc(sz+1);
-		sprintf(p,c,classpath,src);
-		system(p);
-		g_free(p);
+		int sz=snprintf(NULL,0,c,d,classpath,src);
+		if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
+		sprintf(p,c,d,classpath,src);
+		ret=system(p);
+		if(ret!=EXIT_SUCCESS){g_free(p);return;}
 	}
+	//dex
+	const gchar*dx_o=json_object_get_string_member(object,st->options_proj[dfile_id].name);
+	const gchar*dx=json_object_get_string_member(object,st->options_proj[dex_id].name);
+	int sz=snprintf(NULL,0,dx,dx_o,d);
+	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
+	sprintf(p,dx,dx_o,d);
+	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
+	//apk
+	const gchar*pi=json_object_get_string_member(object,st->options_proj[paki_id].name);
+	const gchar*pm=json_object_get_string_member(object,st->options_proj[pakm_id].name);
+	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
+	const gchar*pk=json_object_get_string_member(object,st->options_proj[pak_id].name);
+	sz=snprintf(NULL,0,pk,pi,pm,pf);
+	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
+	sprintf(p,pk,pi,pm,pf);
+	system(p);
+	g_free(p);
 }
 static void main_file(struct stk*st){
 	st->json=json_parser_new();
@@ -165,10 +184,17 @@ int main(int argc,char**argv){
 	st.options[height_id].name="height";st.options[height_id].help="Window height in pixels";
 	st.options[folder_id].name="folder";st.options[folder_id].help="Project folder";
 	st.options[file_id].name="file";st.options[file_id].help="Parse a program file";
-	st.options_proj[comp_id].name="compiler";st.options_proj[comp_id].help="Compiler format";
+	st.options_proj[cdir_id].name="class_dir";st.options_proj[cdir_id].help="Produced classes directory";
+	st.options_proj[comp_id].name="compiler";st.options_proj[comp_id].help="Compiler call format";
 	st.options_proj[srcs_id].name="sources";st.options_proj[srcs_id].help="Sources for the compiler";
 	st.options_proj_src[classp_id].name="classpath";st.options_proj_src[classp_id].help="Classpath at compiler";
 	st.options_proj_src[src_id].name="source";st.options_proj_src[src_id].help="Source at compiler";
+	st.options_proj[dfile_id].name="dex_file";st.options_proj[dfile_id].help="Dex file name";
+	st.options_proj[dex_id].name="dex";st.options_proj[dex_id].help="Dex call format";
+	st.options_proj[paki_id].name="pak_inc";st.options_proj[paki_id].help="Package include";
+	st.options_proj[pakm_id].name="pak_man";st.options_proj[pakm_id].help="Package manifest";
+	st.options_proj[pakf_id].name="pak_file";st.options_proj[pakf_id].help="Package file";
+	st.options_proj[pak_id].name="pak";st.options_proj[pak_id].help="Package call format";
 	GtkApplication *app;
 	app = gtk_application_new (NULL, G_APPLICATION_HANDLES_COMMAND_LINE);//G_APPLICATION_FLAGS_NONE
 	g_signal_connect_data (app, "activate", G_CALLBACK (activate), &st, NULL, (GConnectFlags) 0);

@@ -1,10 +1,17 @@
 {
-"compiler":"ecj -source 1.5 -g -d ./test/obj %s %s",
+"class_dir":"./test/obj",
+"compiler":"ecj -source 1.5 -d %s %s %s",
 "sources":
 [
 	{
 	"classpath":"-classpath /usr/lib/android-sdk/platforms/android-23/android.jar",
-	"source":"./test/src/example.java"
+	"source":"./test/src/MainActivity.java"
 	}
-]
+],
+"dex_file":"./test/bin/classes.dex",
+"dex":"dalvik-exchange --dex --output=%s %s",
+"pak_inc":"-I /usr/lib/android-sdk/platforms/android-23/android.jar",
+"pak_man":"-M ./test/AndroidManifest.xml",
+"pak_file":"-F ./test/bin/example.apk",
+"pak":"aapt package -f %s %s %s"
 }
