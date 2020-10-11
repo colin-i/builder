@@ -1,3 +1,5 @@
 *.class
-*.dex
+classes.dex
 *.apk
+certificate.pem
+key.pk8

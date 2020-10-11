@@ -63,6 +63,7 @@ void g_application_quit (GApplication *application);
 int g_application_run (GApplication *application,int argc,char **argv);
 void g_free (gpointer mem);
 void g_object_unref (gpointer object);
+gchar *g_path_get_dirname (const gchar *file_name) __attribute__((__malloc__));
 gpointer g_realloc(gpointer mem,gsize n_bytes);
 gulong g_signal_connect_data (gpointer instance,const gchar *detailed_signal,GCallback c_handler,gpointer data,GClosureNotify destroy_data,GConnectFlags con);
 GtkApplication * gtk_application_new (const gchar *application_id, GApplicationFlags flags);
