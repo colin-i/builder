@@ -1,5 +1,3 @@
 *.class
 classes.dex
 *.apk
-certificate.pem
-key.pk8
