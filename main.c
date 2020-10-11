@@ -202,7 +202,7 @@ int main(int argc,char**argv){
 	st.options_proj[pakf_id].name="pak_file";st.options_proj[pakf_id].help="Package file";
 	st.options_proj[pak_id].name="pak";st.options_proj[pak_id].help="Package call format";
 	st.options_proj[sigf_id].name="sign_file";st.options_proj[sigf_id].help="Sign package file";
-	st.options_proj[sig_id].name="sign";st.options_proj[sig_id].help="Sign package format";
+	st.options_proj[sig_id].name="sign";st.options_proj[sig_id].help="Sign package call format";
 	GtkApplication *app;
 	app = gtk_application_new (NULL, G_APPLICATION_HANDLES_COMMAND_LINE);//G_APPLICATION_FLAGS_NONE
 	g_signal_connect_data (app, "activate", G_CALLBACK (activate), &st, NULL, (GConnectFlags) 0);
