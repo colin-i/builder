@@ -20,7 +20,7 @@ struct option{
 	char*help;
 };
 #define number_of_options 4
-#define number_of_options_proj 9
+#define number_of_options_proj 11
 #define number_of_options_proj_src 2
 struct stk{
 	char*file;
@@ -31,8 +31,8 @@ struct stk{
 	GtkWindow*main_win;
 };
 enum{width_id,height_id,folder_id,file_id};
-enum{cdir_id,comp_id,srcs_id,dfile_id,dex_id
-	,pakf_id,pak_id,sigf_id,sig_id};
+enum{cdir_id,comp_id,dfile_id,dex_id,pakf_id,pak_id,upd_id
+	,sigf_id,sig_id,inst_id,srcs_id};
 enum{classp_id,src_id};
 #define help_text "Launch the program with the file options.\n\
 e.g. builder example.json"
@@ -69,7 +69,7 @@ static void help_popup(struct stk*st){
 		gtk_text_buffer_insert(text_buffer,&it,st->options_proj[i].help,-1);
 		if(i==srcs_id){
 			for(unsigned int j=0;j<number_of_options_proj_src;j++){
-				gtk_text_buffer_insert(text_buffer,&it,"\n",1);
+				gtk_text_buffer_insert(text_buffer,&it,"\n\t",2);
 				gtk_text_buffer_insert(text_buffer,&it,st->options_proj_src[j].name,-1);
 				gtk_text_buffer_insert(text_buffer,&it,"=",1);
 				gtk_text_buffer_insert(text_buffer,&it,st->options_proj_src[j].help,-1);
@@ -96,6 +96,7 @@ static void save_json(struct stk*st){
 static void build_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
 	JsonObject*object = json_node_get_object(root);
+	//compile
 	const gchar*d=json_object_get_string_member(object,st->options_proj[cdir_id].name);
 	const gchar*c=json_object_get_string_member(object,st->options_proj[comp_id].name);
 	JsonArray*a=json_object_get_array_member(object,st->options_proj[srcs_id].name);
@@ -121,11 +122,15 @@ static void build_proj(struct stk*st){
 	//apk
 	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
 	const gchar*pk=json_object_get_string_member(object,st->options_proj[pak_id].name);
-	char*dx_d=g_path_get_dirname(dx_f);
-	sz=snprintf(NULL,0,pk,pf,dx_d);
+	sz=snprintf(NULL,0,pk,pf);
 	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
-	sprintf(p,pk,pf,dx_d);
-	g_free(dx_d);
+	sprintf(p,pk,pf);
+	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
+	//update ;exit 0
+	const gchar*ad=json_object_get_string_member(object,st->options_proj[upd_id].name);
+	sz=snprintf(NULL,0,ad,pf,dx_f);
+	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
+	sprintf(p,ad,pf,dx_f);
 	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
 	//sign
 	const gchar*sf=json_object_get_string_member(object,st->options_proj[sigf_id].name);
@@ -133,6 +138,12 @@ static void build_proj(struct stk*st){
 	sz=snprintf(NULL,0,sg,pf,sf);
 	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
 	sprintf(p,sg,pf,sf);
+	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
+	//inst
+	const gchar*in=json_object_get_string_member(object,st->options_proj[inst_id].name);
+	sz=snprintf(NULL,0,in,sf);
+	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
+	sprintf(p,in,sf);
 	system(p);
 	g_free(p);
 }
@@ -194,15 +205,17 @@ int main(int argc,char**argv){
 	st.options[file_id].name="file";st.options[file_id].help="Parse a program file";
 	st.options_proj[cdir_id].name="class_dir";st.options_proj[cdir_id].help="Produced classes directory";
 	st.options_proj[comp_id].name="compiler";st.options_proj[comp_id].help="Compiler call format";
-	st.options_proj[srcs_id].name="sources";st.options_proj[srcs_id].help="Sources for the compiler";
-	st.options_proj_src[classp_id].name="classpath";st.options_proj_src[classp_id].help="Classpath at compiler";
-	st.options_proj_src[src_id].name="source";st.options_proj_src[src_id].help="Source at compiler";
 	st.options_proj[dfile_id].name="dex_file";st.options_proj[dfile_id].help="Dex file name";
 	st.options_proj[dex_id].name="dex";st.options_proj[dex_id].help="Dex call format";
 	st.options_proj[pakf_id].name="pak_file";st.options_proj[pakf_id].help="Package file";
 	st.options_proj[pak_id].name="pak";st.options_proj[pak_id].help="Package call format";
+	st.options_proj[upd_id].name="update";st.options_proj[upd_id].help="Update call format";
 	st.options_proj[sigf_id].name="sign_file";st.options_proj[sigf_id].help="Sign package file";
 	st.options_proj[sig_id].name="sign";st.options_proj[sig_id].help="Sign package call format";
+	st.options_proj[srcs_id].name="sources";st.options_proj[srcs_id].help="Sources for the compiler";
+	st.options_proj[inst_id].name="install";st.options_proj[inst_id].help="Install call format";
+	st.options_proj_src[classp_id].name="classpath";st.options_proj_src[classp_id].help="Classpath at compiler";
+	st.options_proj_src[src_id].name="source";st.options_proj_src[src_id].help="Source at compiler";
 	GtkApplication *app;
 	app = gtk_application_new (NULL, G_APPLICATION_HANDLES_COMMAND_LINE);//G_APPLICATION_FLAGS_NONE
 	g_signal_connect_data (app, "activate", G_CALLBACK (activate), &st, NULL, (GConnectFlags) 0);

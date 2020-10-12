@@ -1,17 +1,19 @@
 {
 "class_dir":"./test/obj",
 "compiler":"ecj -source 1.5 -d %s -classpath %s %s",
+"dex_file":"./test/bin/classes.dex",
+"dex":"dalvik-exchange --dex --output=%s %s",
+"pak_file":"./test/example.apk",
+"pak":"aapt package -f -I /usr/lib/android-sdk/platforms/android-23/android.jar -M ./test/AndroidManifest.xml -S ./test/res -F %s",
+"update":"zip -uj %s %s",
+"sign_file":"./test/test.apk",
+"sign":"apksigner sign --cert \"./test/certificate.pem\" --key \"./test/key.pk8\" --in %s --out %s",
+"install":"adb connect 192.168.4.3;adb install -r %s",
 "sources":
 [
 	{
 	"classpath":"/usr/lib/android-sdk/platforms/android-23/android.jar",
 	"source":"./test/src/MainActivity.java"
 	}
-],
-"dex_file":"./test/bin/classes.dex",
-"dex":"dalvik-exchange --dex --output=%s %s",
-"pak_file":"./test/example.apk",
-"pak":"aapt package -f -I /usr/lib/android-sdk/platforms/android-23/android.jar -M ./test/AndroidManifest.xml -F %s %s",
-"sign_file":"./test/test.apk",
-"sign":"apksigner sign --cert \"./test/certificate.pem\" --key \"./test/key.pk8\" --in %s --out %s"
+]
 }
