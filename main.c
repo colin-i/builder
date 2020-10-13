@@ -8,6 +8,7 @@
 #else
 #include "inc/gtk.h"
 #include "inc/json.h"
+#include "inc/stdbool.h"
 #include "inc/stdlib.h"
 #include "inc/stdio.h"
 #include "inc/unistd.h"
@@ -93,58 +94,81 @@ static void save_json(struct stk*st){
 	json_generator_to_file (j, json_object_get_string_member(object, st->options[file_id].name), NULL);
 	g_object_unref(j);
 }
-static void build_proj(struct stk*st){
-	JsonNode*root = json_parser_get_root(st->jsonp);
-	JsonObject*object = json_node_get_object(root);
-	//compile
+static bool proj_compile(JsonObject*object,char**p,int*size,struct stk*st){
 	const gchar*d=json_object_get_string_member(object,st->options_proj[cdir_id].name);
 	const gchar*c=json_object_get_string_member(object,st->options_proj[comp_id].name);
 	JsonArray*a=json_object_get_array_member(object,st->options_proj[srcs_id].name);
 	guint n=json_array_get_length(a);
-	int size=0;char*p=NULL;int ret;
 	for(guint i=0;i<n;i++){
 		JsonObject*s=json_array_get_object_element(a,i);
 		const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[classp_id].name);
 		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
 		int sz=snprintf(NULL,0,c,d,classpath,src);
-		if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
-		sprintf(p,c,d,classpath,src);
-		ret=system(p);
-		if(ret!=EXIT_SUCCESS){g_free(p);return;}
+		if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
+		sprintf(*p,c,d,classpath,src);
+		if(system(*p)!=EXIT_SUCCESS)return FALSE;
 	}
-	//dex
+	return TRUE;
+}
+static bool proj_dex(JsonObject*object,char**p,int*size,struct stk*st){
+	const gchar*d=json_object_get_string_member(object,st->options_proj[cdir_id].name);
 	const gchar*dx_f=json_object_get_string_member(object,st->options_proj[dfile_id].name);
 	const gchar*dx=json_object_get_string_member(object,st->options_proj[dex_id].name);
 	int sz=snprintf(NULL,0,dx,dx_f,d);
-	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
-	sprintf(p,dx,dx_f,d);
-	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
-	//apk
+	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
+	sprintf(*p,dx,dx_f,d);
+	return system(*p)==EXIT_SUCCESS;
+}
+static bool proj_pak(JsonObject*object,char**p,int*size,struct stk*st){
 	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
 	const gchar*pk=json_object_get_string_member(object,st->options_proj[pak_id].name);
-	sz=snprintf(NULL,0,pk,pf);
-	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
-	sprintf(p,pk,pf);
-	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
-	//update ;exit 0
+	int sz=snprintf(NULL,0,pk,pf);
+	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
+	sprintf(*p,pk,pf);
+	return system(*p)==EXIT_SUCCESS;
+}
+static bool proj_upd(JsonObject*object,char**p,int*size,struct stk*st){//;exit 0
+	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
+	const gchar*dx_f=json_object_get_string_member(object,st->options_proj[dfile_id].name);
 	const gchar*ad=json_object_get_string_member(object,st->options_proj[upd_id].name);
-	sz=snprintf(NULL,0,ad,pf,dx_f);
-	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
-	sprintf(p,ad,pf,dx_f);
-	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
-	//sign
+	int sz=snprintf(NULL,0,ad,pf,dx_f);
+	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
+	sprintf(*p,ad,pf,dx_f);
+	return system(*p)==EXIT_SUCCESS;
+}
+static bool proj_sig(JsonObject*object,char**p,int*size,struct stk*st){
+	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
 	const gchar*sf=json_object_get_string_member(object,st->options_proj[sigf_id].name);
 	const gchar*sg=json_object_get_string_member(object,st->options_proj[sig_id].name);
-	sz=snprintf(NULL,0,sg,pf,sf);
-	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
-	sprintf(p,sg,pf,sf);
-	if(system(p)!=EXIT_SUCCESS){g_free(p);return;}
-	//inst
+	int sz=snprintf(NULL,0,sg,pf,sf);
+	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
+	sprintf(*p,sg,pf,sf);
+	return system(*p)==EXIT_SUCCESS;
+}
+static void proj_inst(JsonObject*object,char**p,int*size,struct stk*st){
+	const gchar*sf=json_object_get_string_member(object,st->options_proj[sigf_id].name);
 	const gchar*in=json_object_get_string_member(object,st->options_proj[inst_id].name);
-	sz=snprintf(NULL,0,in,sf);
-	if(sz>size){p=(char*)g_realloc(p,sz+1);size=sz;}
-	sprintf(p,in,sf);
-	system(p);
+	int sz=snprintf(NULL,0,in,sf);
+	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
+	sprintf(*p,in,sf);
+	system(*p);
+}
+static void build_proj(struct stk*st){
+	JsonNode*root = json_parser_get_root(st->jsonp);
+	JsonObject*object = json_node_get_object(root);
+	int size=0;char*p=NULL;
+	if(proj_compile(object,&p,&size,st)&&proj_dex(object,&p,&size,st)
+		&&proj_upd(object,&p,&size,st)&&proj_sig(object,&p,&size,st))
+			proj_inst(object,&p,&size,st);
+	g_free(p);
+}
+static void rebuild_proj(struct stk*st){
+	JsonNode*root = json_parser_get_root(st->jsonp);
+	JsonObject*object = json_node_get_object(root);
+	int size=0;char*p=NULL;
+	if(proj_compile(object,&p,&size,st)&&proj_dex(object,&p,&size,st)
+		&&proj_pak(object,&p,&size,st)&&proj_upd(object,&p,&size,st)
+		&&proj_sig(object,&p,&size,st))proj_inst(object,&p,&size,st);
 	g_free(p);
 }
 static void main_file(struct stk*st){
@@ -170,6 +194,9 @@ static void activate(GtkApplication* app,struct stk*st){
 	b=gtk_button_new_with_label("Build");
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (build_proj),st,NULL,G_CONNECT_SWAPPED);
+	b=gtk_button_new_with_label("Rebuild");
+	gtk_box_append((GtkBox*)box,b);
+	g_signal_connect_data (b, "clicked",G_CALLBACK (rebuild_proj),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("Save");
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (save_json),st,NULL,G_CONNECT_SWAPPED);
