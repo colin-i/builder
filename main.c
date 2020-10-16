@@ -40,8 +40,8 @@ e.g. builder example.json"
 
 static void help_popup(struct stk*st){
 	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Help",
-			    st->main_win, (GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL),
-			    "_OK",GTK_RESPONSE_NONE,NULL);
+			st->main_win, (GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL),
+			"_OK",GTK_RESPONSE_NONE,NULL);
 	int w;int h;
 	gtk_window_get_size (st->main_win,&w,&h);
 	gtk_window_set_default_size((GtkWindow*)dialog,w,h);
@@ -88,8 +88,8 @@ static void help_popup(struct stk*st){
 }
 static void save_json(struct stk*st){
 	JsonGenerator *j=json_generator_new ();
-	json_generator_set_root (j, json_parser_get_root(st->json));
-	JsonNode* root = json_parser_get_root(st->json);
+	JsonNode* root = json_parser_get_root(st->jsonp);
+	json_generator_set_root (j, root);
 	JsonObject *object = json_node_get_object(root);
 	json_generator_to_file (j, json_object_get_string_member(object, st->options[file_id].name), NULL);
 	g_object_unref(j);
