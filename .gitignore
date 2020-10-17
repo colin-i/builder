@@ -1,3 +1,4 @@
 *.class
 classes.dex
 *.apk
+test/timestamp.json

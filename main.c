@@ -21,7 +21,7 @@ struct option{
 	char*help;
 };
 #define number_of_options 4
-#define number_of_options_proj 11
+#define number_of_options_proj 14
 #define number_of_options_proj_src 2
 struct stk{
 	char*file;
@@ -32,8 +32,8 @@ struct stk{
 	GtkWindow*main_win;
 };
 enum{width_id,height_id,folder_id,file_id};
-enum{cdir_id,comp_id,dfile_id,dex_id,pakf_id,pak_id,upd_id
-	,sigf_id,sig_id,inst_id,srcs_id};
+enum{cdir_id,comp_id,dfile_id,dex_id,man_id,res_id,pakf_id,pak_id,upd_id
+	,sigf_id,sig_id,inst_id,times_id,srcs_id};
 enum{classp_id,src_id};
 #define help_text "Launch the program with the file options.\n\
 e.g. builder example.json"
@@ -46,7 +46,7 @@ static void help_popup(struct stk*st){
 	gtk_window_get_size (st->main_win,&w,&h);
 	gtk_window_set_default_size((GtkWindow*)dialog,w,h);
 	g_signal_connect_data (dialog,"response",G_CALLBACK (gtk_window_destroy),
-	                       NULL,NULL,(GConnectFlags)0);
+		NULL,NULL,(GConnectFlags)0);
 	//
 	GtkWidget*text = gtk_text_view_new ();
 	gtk_text_view_set_editable((GtkTextView*)text, FALSE);
@@ -94,7 +94,37 @@ static void save_json(struct stk*st){
 	json_generator_to_file (j, json_object_get_string_member(object, st->options[file_id].name), NULL);
 	g_object_unref(j);
 }
-static bool proj_compile(JsonObject*object,char**p,int*size,struct stk*st){
+static void file_stamp(const char*fname,JsonObject*gen_obj){
+	GFile*f=g_file_new_for_path(fname);
+	GFileInfo*fi=g_file_query_info(f,G_FILE_ATTRIBUTE_TIME_MODIFIED,
+	 G_FILE_QUERY_INFO_NONE,NULL,NULL);
+	g_object_unref(f);
+	GDateTime*dt=g_file_info_get_modification_date_time(fi);
+	g_object_unref(fi);
+	gint64 t=g_date_time_to_unix(dt);
+	char str[sizeof(gint64)*2+1];
+	sprintf(str,"%llx",t);
+	json_object_set_string_member(gen_obj,fname,str);
+}
+static void dir_stamp(const char*path,JsonObject*gen_obj){
+	GFile*f=g_file_new_for_path(path);
+	GFileEnumerator* enumerate = g_file_enumerate_children(f,
+	 G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_NAME,
+	 G_FILE_QUERY_INFO_NONE,NULL,NULL);
+	g_object_unref(f);
+	for(;;){
+		GFileInfo*i=g_file_enumerator_next_file(enumerate,NULL,NULL);
+		if(i==NULL)break;
+		char*name_path=g_build_filename(path,g_file_info_get_name(i),NULL);
+		if(g_file_info_get_file_type(i)==G_FILE_TYPE_DIRECTORY)
+			dir_stamp(name_path,gen_obj);
+		else file_stamp(name_path,gen_obj);
+		g_object_unref(i);
+		g_free(name_path);
+	}
+	g_file_enumerator_close(enumerate,NULL,NULL);
+}
+static bool proj_compile(JsonObject*object,char**p,int*size,struct stk*st,JsonObject*gen_obj){
 	const gchar*d=json_object_get_string_member(object,st->options_proj[cdir_id].name);
 	const gchar*c=json_object_get_string_member(object,st->options_proj[comp_id].name);
 	JsonArray*a=json_object_get_array_member(object,st->options_proj[srcs_id].name);
@@ -107,6 +137,7 @@ static bool proj_compile(JsonObject*object,char**p,int*size,struct stk*st){
 		if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
 		sprintf(*p,c,d,classpath,src);
 		if(system(*p)!=EXIT_SUCCESS)return FALSE;
+		file_stamp(src,gen_obj);
 	}
 	return TRUE;
 }
@@ -119,13 +150,18 @@ static bool proj_dex(JsonObject*object,char**p,int*size,struct stk*st){
 	sprintf(*p,dx,dx_f,d);
 	return system(*p)==EXIT_SUCCESS;
 }
-static bool proj_pak(JsonObject*object,char**p,int*size,struct stk*st){
+static bool proj_pak(JsonObject*object,char**p,int*size,struct stk*st,JsonObject*gen_obj){
+	const gchar*mf=json_object_get_string_member(object, st->options_proj[man_id].name);
+	const gchar*rd=json_object_get_string_member(object, st->options_proj[res_id].name);
 	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
 	const gchar*pk=json_object_get_string_member(object,st->options_proj[pak_id].name);
-	int sz=snprintf(NULL,0,pk,pf);
+	int sz=snprintf(NULL,0,pk,mf,rd,pf);
 	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
-	sprintf(*p,pk,pf);
-	return system(*p)==EXIT_SUCCESS;
+	sprintf(*p,pk,mf,rd,pf);
+	if(system(*p)!=EXIT_SUCCESS)return FALSE;
+	file_stamp(mf,gen_obj);
+	dir_stamp(rd,gen_obj);
+	return TRUE;
 }
 static bool proj_upd(JsonObject*object,char**p,int*size,struct stk*st){//;exit 0
 	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
@@ -156,20 +192,33 @@ static void proj_inst(JsonObject*object,char**p,int*size,struct stk*st){
 static void build_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
 	JsonObject*object = json_node_get_object(root);
+	JsonObject*obj=json_object_new();
 	int size=0;char*p=NULL;
-	if(proj_compile(object,&p,&size,st)&&proj_dex(object,&p,&size,st)
+	if(proj_compile(object,&p,&size,st,obj)&&proj_dex(object,&p,&size,st)
 		&&proj_upd(object,&p,&size,st)&&proj_sig(object,&p,&size,st))
 			proj_inst(object,&p,&size,st);
 	g_free(p);
+	g_object_unref(obj);
 }
 static void rebuild_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
 	JsonObject*object = json_node_get_object(root);
+	JsonObject*obj=json_object_new();
 	int size=0;char*p=NULL;
-	if(proj_compile(object,&p,&size,st)&&proj_dex(object,&p,&size,st)
-		&&proj_pak(object,&p,&size,st)&&proj_upd(object,&p,&size,st)
+	if(proj_compile(object,&p,&size,st,obj)&&proj_dex(object,&p,&size,st)
+		&&proj_pak(object,&p,&size,st,obj)&&proj_upd(object,&p,&size,st)
 		&&proj_sig(object,&p,&size,st))proj_inst(object,&p,&size,st);
 	g_free(p);
+	//
+	JsonNode*nod=json_node_alloc();
+	json_node_init_object(nod,obj);
+	JsonGenerator*gen=json_generator_new();
+	json_generator_set_root (gen,nod);
+	const gchar*timestamp_file=json_object_get_string_member(object, st->options_proj[times_id].name);
+	json_generator_to_file (gen,timestamp_file,NULL);
+	//g_object_unref(obj);is already node
+	json_node_free(nod);
+	g_object_unref(gen);
 }
 static void main_file(struct stk*st){
 	st->json=json_parser_new();
@@ -234,13 +283,16 @@ int main(int argc,char**argv){
 	st.options_proj[comp_id].name="compiler";st.options_proj[comp_id].help="Compiler call format";
 	st.options_proj[dfile_id].name="dex_file";st.options_proj[dfile_id].help="Dex file name";
 	st.options_proj[dex_id].name="dex";st.options_proj[dex_id].help="Dex call format";
+	st.options_proj[man_id].name="man_file";st.options_proj[man_id].help="Manifest file";
+	st.options_proj[res_id].name="res_dir";st.options_proj[res_id].help="Resources directory";
 	st.options_proj[pakf_id].name="pak_file";st.options_proj[pakf_id].help="Package file";
 	st.options_proj[pak_id].name="pak";st.options_proj[pak_id].help="Package call format";
 	st.options_proj[upd_id].name="update";st.options_proj[upd_id].help="Update call format";
 	st.options_proj[sigf_id].name="sign_file";st.options_proj[sigf_id].help="Sign package file";
 	st.options_proj[sig_id].name="sign";st.options_proj[sig_id].help="Sign package call format";
-	st.options_proj[srcs_id].name="sources";st.options_proj[srcs_id].help="Sources for the compiler";
 	st.options_proj[inst_id].name="install";st.options_proj[inst_id].help="Install call format";
+	st.options_proj[times_id].name="timestamp_file";st.options_proj[times_id].help="Timestamps file";
+	st.options_proj[srcs_id].name="sources";st.options_proj[srcs_id].help="Sources for the compiler";
 	st.options_proj_src[classp_id].name="classpath";st.options_proj_src[classp_id].help="Classpath at compiler";
 	st.options_proj_src[src_id].name="source";st.options_proj_src[src_id].help="Source at compiler";
 	GtkApplication *app;

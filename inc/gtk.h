@@ -9,8 +9,15 @@ typedef unsigned int gsize;
 typedef unsigned int guint;
 typedef unsigned long gulong;
 typedef void* gpointer;
+__extension__ typedef signed long long gint64;
 
 typedef struct _GApplication GApplication;
+typedef struct _GDateTime GDateTime;
+typedef struct _GCancellable GCancellable;
+typedef struct _GError GError;
+typedef struct _GFile GFile;
+typedef struct _GFileEnumerator GFileEnumerator;
+typedef struct _GFileInfo GFileInfo;
 typedef struct _GtkApplication GtkApplication;
 typedef struct _GtkBox GtkBox;
 typedef struct _GtkDialog GtkDialog;
@@ -30,6 +37,10 @@ typedef enum{  G_APPLICATION_HANDLES_COMMAND_LINE = 1 << 3}
  GApplicationFlags;
 typedef enum{G_CONNECT_SWAPPED = 1 << 1}
  GConnectFlags;
+typedef enum {  G_FILE_QUERY_INFO_NONE = 0}
+ GFileQueryInfoFlags;
+typedef enum {  G_FILE_TYPE_UNKNOWN = 0,  G_FILE_TYPE_REGULAR,  G_FILE_TYPE_DIRECTORY}
+ GFileType;
 typedef enum{  GTK_ALIGN_FILL,  GTK_ALIGN_START,  GTK_ALIGN_END,  GTK_ALIGN_CENTER,  GTK_ALIGN_BASELINE}
  GtkAlign;
 typedef enum{  GTK_DIALOG_MODAL = 1 << 0,  GTK_DIALOG_DESTROY_WITH_PARENT = 1 << 1}
@@ -40,6 +51,10 @@ typedef enum{  GTK_RESPONSE_NONE = -1}
  GtkResponseType;
 
 #define G_CALLBACK(f) ((GCallback) (f))
+
+#define G_FILE_ATTRIBUTE_TIME_MODIFIED "time::modified"
+#define G_FILE_ATTRIBUTE_STANDARD_NAME "standard::name"
+#define G_FILE_ATTRIBUTE_STANDARD_TYPE "standard::type"
 
 struct _GtkTextIter {
   gpointer dummy1;
@@ -61,6 +76,16 @@ struct _GtkTextIter {
 void g_application_activate (GApplication *application);
 void g_application_quit (GApplication *application);
 int g_application_run (GApplication *application,int argc,char **argv);
+gchar *g_build_filename (const gchar *first_element, ...) __attribute__((__malloc__)) __attribute__((__sentinel__));
+gint64 g_date_time_to_unix (GDateTime *datetime);
+GFileEnumerator * g_file_enumerate_children (GFile *file, const char *attributes, GFileQueryInfoFlags flags, GCancellable *cancellable, GError **error);
+gboolean g_file_enumerator_close (GFileEnumerator *enumerator,GCancellable *cancellable,GError **error);
+GFileInfo *g_file_enumerator_next_file (GFileEnumerator *enumerator, GCancellable *cancellable, GError **error);
+GFileType g_file_info_get_file_type (GFileInfo *info);
+GDateTime * g_file_info_get_modification_date_time (GFileInfo *info);
+const char * g_file_info_get_name (GFileInfo *info);
+GFile * g_file_new_for_path (const char *path);
+GFileInfo * g_file_query_info (GFile *file,const char *attributes,GFileQueryInfoFlags flags,GCancellable *cancellable,GError **error);
 void g_free (gpointer mem);
 void g_object_unref (gpointer object);
 gpointer g_realloc(gpointer mem,gsize n_bytes);
