@@ -238,7 +238,7 @@ static void main_file(struct stk*st){
 	object = json_node_get_object(root);
 	const gchar*srcf=json_object_get_string_member(object,st->options_proj[srcs_id].name);
 	st->jsons=json_parser_new();
-	json_parser_load_from_file(st->jsons,srcf,NULL);	
+	json_parser_load_from_file(st->jsons,srcf,NULL);
 }
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
