@@ -25,7 +25,7 @@ struct option{
 #define number_of_options_proj_src 2
 struct stk{
 	char*file;
-	JsonParser*json;JsonParser*jsonp;
+	JsonParser*json;JsonParser*jsonp;JsonParser*jsons;
 	struct option options[number_of_options];
 	struct option options_proj[number_of_options_proj];
 	struct option options_proj_src[number_of_options_proj_src];
@@ -87,11 +87,13 @@ static void help_popup(struct stk*st){
 	gtk_widget_show (dialog);
 }
 static void save_json(struct stk*st){
-	JsonGenerator *j=json_generator_new ();
 	JsonNode* root = json_parser_get_root(st->jsonp);
-	json_generator_set_root (j, root);
 	JsonObject *object = json_node_get_object(root);
-	json_generator_to_file (j, json_object_get_string_member(object, st->options[file_id].name), NULL);
+	const gchar*srcs=json_object_get_string_member(object, st->options_proj[srcs_id].name);
+	root = json_parser_get_root(st->jsons);
+	JsonGenerator *j=json_generator_new ();
+	json_generator_set_root (j, root);
+	json_generator_to_file (j, srcs, NULL);
 	g_object_unref(j);
 }
 static void file_stamp(const char*fname,JsonObject*gen_obj){
@@ -102,9 +104,7 @@ static void file_stamp(const char*fname,JsonObject*gen_obj){
 	GDateTime*dt=g_file_info_get_modification_date_time(fi);
 	g_object_unref(fi);
 	gint64 t=g_date_time_to_unix(dt);
-	char str[sizeof(gint64)*2+1];
-	sprintf(str,"%llx",t);
-	json_object_set_string_member(gen_obj,fname,str);
+	json_object_set_int_member(gen_obj,fname,t);
 }
 static void dir_stamp(const char*path,JsonObject*gen_obj){
 	GFile*f=g_file_new_for_path(path);
@@ -127,7 +127,8 @@ static void dir_stamp(const char*path,JsonObject*gen_obj){
 static bool proj_compile(JsonObject*object,char**p,int*size,struct stk*st,JsonObject*gen_obj){
 	const gchar*d=json_object_get_string_member(object,st->options_proj[cdir_id].name);
 	const gchar*c=json_object_get_string_member(object,st->options_proj[comp_id].name);
-	JsonArray*a=json_object_get_array_member(object,st->options_proj[srcs_id].name);
+	JsonNode*root = json_parser_get_root(st->jsons);
+	JsonArray*a=json_node_get_array(root);
 	guint n=json_array_get_length(a);
 	for(guint i=0;i<n;i++){
 		JsonObject*s=json_array_get_object_element(a,i);
@@ -200,6 +201,16 @@ static void build_proj(struct stk*st){
 	g_free(p);
 	g_object_unref(obj);
 }
+static void write_temp(JsonObject*obj,const gchar*timestamp_file){
+	JsonNode*nod=json_node_alloc();
+	json_node_init_object(nod,obj);
+	JsonGenerator*gen=json_generator_new();
+	json_generator_set_root (gen,nod);
+	json_generator_to_file (gen,timestamp_file,NULL);
+	//g_object_unref(obj);is already node
+	json_node_free(nod);
+	g_object_unref(gen);
+}
 static void rebuild_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
 	JsonObject*object = json_node_get_object(root);
@@ -209,16 +220,7 @@ static void rebuild_proj(struct stk*st){
 		&&proj_pak(object,&p,&size,st,obj)&&proj_upd(object,&p,&size,st)
 		&&proj_sig(object,&p,&size,st))proj_inst(object,&p,&size,st);
 	g_free(p);
-	//
-	JsonNode*nod=json_node_alloc();
-	json_node_init_object(nod,obj);
-	JsonGenerator*gen=json_generator_new();
-	json_generator_set_root (gen,nod);
-	const gchar*timestamp_file=json_object_get_string_member(object, st->options_proj[times_id].name);
-	json_generator_to_file (gen,timestamp_file,NULL);
-	//g_object_unref(obj);is already node
-	json_node_free(nod);
-	g_object_unref(gen);
+	write_temp(obj,json_object_get_string_member(object, st->options_proj[times_id].name));
 }
 static void main_file(struct stk*st){
 	st->json=json_parser_new();
@@ -232,6 +234,11 @@ static void main_file(struct stk*st){
 	st->jsonp=json_parser_new();
 	const gchar*f=json_object_get_string_member(object, st->options[file_id].name);
 	json_parser_load_from_file(st->jsonp,f,NULL);
+	root = json_parser_get_root(st->jsonp);
+	object = json_node_get_object(root);
+	const gchar*srcf=json_object_get_string_member(object,st->options_proj[srcs_id].name);
+	st->jsons=json_parser_new();
+	json_parser_load_from_file(st->jsons,srcf,NULL);	
 }
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
@@ -300,6 +307,7 @@ int main(int argc,char**argv){
 	g_signal_connect_data (app, "activate", G_CALLBACK (activate), &st, NULL, (GConnectFlags) 0);
 	g_signal_connect_data (app, "command-line", G_CALLBACK (command_line), NULL, NULL, (GConnectFlags) 0);
 	int status=g_application_run ((GApplication*)app, argc, argv);
+	g_object_unref(st.jsons);
 	g_object_unref(st.jsonp);
 	g_object_unref(st.json);
 	g_object_unref (app);

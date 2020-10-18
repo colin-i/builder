@@ -1,0 +1,16 @@
+{
+"class_dir":"obj",
+"compiler":"ecj -source 1.5 -d %s -classpath %s %s",
+"dex_file":"bin/classes.dex",
+"dex":"dalvik-exchange --dex --output=%s %s",
+"man_file":"AndroidManifest.xml",
+"res_dir":"res",
+"pak_file":"example.apk",
+"pak":"aapt package -f -I /usr/lib/android-sdk/platforms/android-23/android.jar -M %s -S %s -F %s",
+"update":"zip -uj %s %s",
+"sign_file":"test.apk",
+"sign":"apksigner sign --cert \"./certificate.pem\" --key \"./key.pk8\" --in %s --out %s",
+"install":"adb connect 192.168.4.3;adb install -r %s",
+"timestamp_file":"timestamp.json",
+"sources":"sources.json"
+}
