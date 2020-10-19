@@ -192,6 +192,16 @@ static void proj_inst(JsonObject*object,char**p,int*size,struct stk*st){
 	sprintf(*p,in,sf);
 	system(*p);
 }
+static void write_temp(JsonObject*obj,const gchar*timestamp_file){
+	JsonNode*nod=json_node_alloc();
+	json_node_init_object(nod,obj);
+	JsonGenerator*gen=json_generator_new();
+	json_generator_set_root (gen,nod);
+	json_generator_to_file (gen,timestamp_file,NULL);
+	//g_object_unref(obj);is already node
+	json_node_free(nod);
+	g_object_unref(gen);
+}
 static void build_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
 	JsonObject*object = json_node_get_object(root);
@@ -203,23 +213,13 @@ static void build_proj(struct stk*st){
 	g_free(p);
 	g_object_unref(obj);
 }
-static void write_temp(JsonObject*obj,const gchar*timestamp_file){
-	JsonNode*nod=json_node_alloc();
-	json_node_init_object(nod,obj);
-	JsonGenerator*gen=json_generator_new();
-	json_generator_set_root (gen,nod);
-	json_generator_to_file (gen,timestamp_file,NULL);
-	//g_object_unref(obj);is already node
-	json_node_free(nod);
-	g_object_unref(gen);
-}
 static void rebuild_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
 	JsonObject*object = json_node_get_object(root);
 	JsonObject*obj=json_object_new();
 	int size=0;char*p=NULL;
-	if(proj_compile(object,&p,&size,st,obj)&&proj_dex(object,&p,&size,st)
-		&&proj_pak(object,&p,&size,st,obj)&&proj_upd(object,&p,&size,st)
+	if(proj_compile(object,&p,&size,st,obj)&&proj_pak(object,&p,&size,st,obj)
+		&&proj_dex(object,&p,&size,st)&&proj_upd(object,&p,&size,st)
 		&&proj_sig(object,&p,&size,st))proj_inst(object,&p,&size,st);
 	g_free(p);
 	write_temp(obj,json_object_get_string_member(object, st->options_proj[times_id].name));
