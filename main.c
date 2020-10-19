@@ -132,8 +132,8 @@ static bool proj_compile(JsonObject*object,char**p,int*size,struct stk*st,JsonOb
 	guint n=json_array_get_length(a);
 	for(guint i=0;i<n;i++){
 		JsonObject*s=json_array_get_object_element(a,i);
-		const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[classp_id].name);
 		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
+		const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[classp_id].name);
 		int sz=snprintf(NULL,0,c,d,classpath,src);
 		if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
 		sprintf(*p,c,d,classpath,src);
@@ -159,10 +159,12 @@ static bool proj_pak(JsonObject*object,char**p,int*size,struct stk*st,JsonObject
 	int sz=snprintf(NULL,0,pk,mf,rd,pf);
 	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
 	sprintf(*p,pk,mf,rd,pf);
-	if(system(*p)!=EXIT_SUCCESS)return FALSE;
-	file_stamp(mf,gen_obj);
-	dir_stamp(rd,gen_obj);
-	return TRUE;
+	if(system(*p)==EXIT_SUCCESS){
+		file_stamp(mf,gen_obj);
+		dir_stamp(rd,gen_obj);
+		return TRUE;
+	}
+	return FALSE;
 }
 static bool proj_upd(JsonObject*object,char**p,int*size,struct stk*st){//;exit 0
 	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
