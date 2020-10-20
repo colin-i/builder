@@ -346,7 +346,7 @@ static void rebuild_proj(struct stk*st){
 	g_free(p);
 	write_temp(obj,json_object_get_string_member(object, st->options_proj[times_id].name));
 }
-static void main_file(struct stk*st){
+static void main_file(struct stk*st,GtkListStore*ls){
 	st->json=json_parser_new();
 	json_parser_load_from_file(st->json,st->file,NULL);
 	JsonNode* root = json_parser_get_root(st->json);
@@ -363,11 +363,21 @@ static void main_file(struct stk*st){
 	const gchar*srcf=json_object_get_string_member(object,st->options_proj[srcs_id].name);
 	st->jsons=json_parser_new();
 	json_parser_load_from_file(st->jsons,srcf,NULL);
+	//
+	root = json_parser_get_root(st->jsons);
+	JsonArray*a=json_node_get_array(root);
+	guint n=json_array_get_length(a);
+	for(guint i=0;i<n;i++){
+		JsonObject*s=json_array_get_object_element(a,i);
+		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
+		GtkTreeIter it;
+		gtk_list_store_append(ls,&it);
+		gtk_list_store_set(ls, &it, LIST_ITEM, src, -1);
+	}
 }
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
 	st->main_win=(GtkWindow*)window;
-	main_file(st);
 	gtk_window_set_title((GtkWindow*)window,"Builder");
 	GtkWidget*box=gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
 	GtkWidget*b;
@@ -398,6 +408,8 @@ static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget*scroll = gtk_scrolled_window_new ();
 	gtk_scrolled_window_set_child ((GtkScrolledWindow*)scroll,tree);
 	//
+	main_file(st,ls);
+	//	
 	GtkWidget*bx=gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
 	gtk_box_append((GtkBox*)bx,scroll);
 	gtk_box_append((GtkBox*)bx,box);

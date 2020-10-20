@@ -26,6 +26,7 @@ typedef struct _GtkScrolledWindow GtkScrolledWindow;
 typedef struct _GtkTextBuffer GtkTextBuffer;
 typedef struct _GtkTextIter GtkTextIter;
 typedef struct _GtkTextView GtkTextView;
+typedef struct _GtkTreeIter GtkTreeIter;
 typedef struct _GtkTreeView GtkTreeView;
 typedef struct _GtkTreeViewColumn GtkTreeViewColumn;
 typedef struct _GtkTreeModel GtkTreeModel;
@@ -77,6 +78,13 @@ struct _GtkTextIter {
   int dummy13;
   gpointer dummy14;
 };
+struct _GtkTreeIter
+{
+  int stamp;
+  gpointer user_data;
+  gpointer user_data2;
+  gpointer user_data3;
+};
 
 void g_application_activate (GApplication *application);
 void g_application_quit (GApplication *application);
@@ -103,7 +111,9 @@ GtkWidget* gtk_button_new_with_label (const char *label);
 GtkCellRenderer *gtk_cell_renderer_text_new (void);
 GtkWidget * gtk_dialog_get_content_area (GtkDialog *dialog);
 GtkWidget* gtk_dialog_new_with_buttons (const char *title,GtkWindow *parent,GtkDialogFlags flags,const char *first_button_text,...) __attribute__((__sentinel__));
+void gtk_list_store_append (GtkListStore *list_store, GtkTreeIter *iter);
 GtkListStore *gtk_list_store_new (int n_columns, ...);
+void gtk_list_store_set (GtkListStore *list_store,GtkTreeIter *iter,...);
 GtkWidget* gtk_scrolled_window_new (void);
 void gtk_scrolled_window_set_child (GtkScrolledWindow *scrolled_window, GtkWidget *child);
 void gtk_text_buffer_insert (GtkTextBuffer *buffer,GtkTextIter *iter,const char *text,int len);
