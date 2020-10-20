@@ -328,12 +328,11 @@ static void build_proj(struct stk*st){
 			proj_sig(object,&p,&size,st);}
 		else if(b==1){
 			if(proj_upd(object,&p,&size,st))proj_sig(object,&p,&size,st);}
+		proj_inst(object,&p,&size,st);
 	}
+	g_free(p);
 	g_object_unref(jsont);
 	write_temp(obj,timestamp_file);
-	//
-	proj_inst(object,&p,&size,st);
-	g_free(p);
 }
 static void rebuild_proj(struct stk*st){
 	JsonNode*root = json_parser_get_root(st->jsonp);
