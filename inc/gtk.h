@@ -1,12 +1,10 @@
 
-//"stdlib.h"
-#define EXIT_SUCCESS 0
-
 typedef char gchar;
 typedef int gint;
 typedef gint gboolean;
 typedef unsigned int gsize;
 typedef unsigned int guint;
+typedef gsize GType;
 typedef unsigned long gulong;
 typedef void* gpointer;
 __extension__ typedef signed long long gint64;
@@ -20,12 +18,17 @@ typedef struct _GFileEnumerator GFileEnumerator;
 typedef struct _GFileInfo GFileInfo;
 typedef struct _GtkApplication GtkApplication;
 typedef struct _GtkBox GtkBox;
+typedef struct _GtkCellRenderer GtkCellRenderer;
 typedef struct _GtkDialog GtkDialog;
 typedef struct _GtkFrame GtkFrame;
+typedef struct _GtkListStore GtkListStore;
 typedef struct _GtkScrolledWindow GtkScrolledWindow;
 typedef struct _GtkTextBuffer GtkTextBuffer;
 typedef struct _GtkTextIter GtkTextIter;
 typedef struct _GtkTextView GtkTextView;
+typedef struct _GtkTreeView GtkTreeView;
+typedef struct _GtkTreeViewColumn GtkTreeViewColumn;
+typedef struct _GtkTreeModel GtkTreeModel;
 typedef struct _GtkWidget GtkWidget;
 typedef struct _GtkWindow GtkWindow;
 
@@ -51,10 +54,12 @@ typedef enum{  GTK_RESPONSE_NONE = -1}
  GtkResponseType;
 
 #define G_CALLBACK(f) ((GCallback) (f))
-
 #define G_FILE_ATTRIBUTE_TIME_MODIFIED "time::modified"
 #define G_FILE_ATTRIBUTE_STANDARD_NAME "standard::name"
 #define G_FILE_ATTRIBUTE_STANDARD_TYPE "standard::type"
+#define G_TYPE_FUNDAMENTAL_SHIFT (2)
+#define G_TYPE_MAKE_FUNDAMENTAL(x) ((GType) ((x) << G_TYPE_FUNDAMENTAL_SHIFT))
+#define G_TYPE_STRING G_TYPE_MAKE_FUNDAMENTAL (16)
 
 struct _GtkTextIter {
   gpointer dummy1;
@@ -95,9 +100,10 @@ GtkWidget * gtk_application_window_new (GtkApplication *application);
 void gtk_box_append (GtkBox *box, GtkWidget *child);
 GtkWidget* gtk_box_new (GtkOrientation orientation,int spacing);
 GtkWidget* gtk_button_new_with_label (const char *label);
+GtkCellRenderer *gtk_cell_renderer_text_new (void);
 GtkWidget * gtk_dialog_get_content_area (GtkDialog *dialog);
 GtkWidget* gtk_dialog_new_with_buttons (const char *title,GtkWindow *parent,GtkDialogFlags flags,const char *first_button_text,...) __attribute__((__sentinel__));
-GtkWidget *gtk_frame_new (const gchar *label);
+GtkListStore *gtk_list_store_new (int n_columns, ...);
 GtkWidget* gtk_scrolled_window_new (void);
 void gtk_scrolled_window_set_child (GtkScrolledWindow *scrolled_window, GtkWidget *child);
 void gtk_text_buffer_insert (GtkTextBuffer *buffer,GtkTextIter *iter,const char *text,int len);
@@ -106,6 +112,11 @@ void gtk_text_buffer_set_text (GtkTextBuffer *buffer,const char *text,int len);
 GtkTextBuffer *gtk_text_view_get_buffer (GtkTextView *text_view);
 GtkWidget * gtk_text_view_new (void);
 void gtk_text_view_set_editable (GtkTextView *text_view,gboolean setting);
+gint gtk_tree_view_append_column (GtkTreeView *tree_view, GtkTreeViewColumn *column);
+GtkTreeViewColumn *gtk_tree_view_column_new_with_attributes (const gchar *title, GtkCellRenderer *cell, ...) __attribute__((__sentinel__));
+GtkWidget *gtk_tree_view_new (void);
+void gtk_tree_view_set_headers_visible (GtkTreeView *tree_view, gboolean headers_visible);
+void gtk_tree_view_set_model (GtkTreeView *tree_view, GtkTreeModel *model);
 void gtk_window_set_default_size (GtkWindow *window, int width, int height);
 void gtk_widget_set_halign (GtkWidget *widget,GtkAlign align);
 void gtk_widget_set_hexpand (GtkWidget *widget,gboolean expand);
