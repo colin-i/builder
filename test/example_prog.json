@@ -12,5 +12,6 @@
 "sign":"apksigner sign --cert \"./certificate.pem\" --key \"./key.pk8\" --in %s --out %s",
 "install":"adb connect 192.168.4.3;adb install -r %s",
 "timestamp_file":"timestamp.json",
+"edit":"adb connect 192.168.4.3;adb shell am start -n com.termux/.app.TermuxActivity;adb shell input text 'edor\\ \"%s\"';adb shell input keyevent 66",
 "sources":"sources.json"
 }
