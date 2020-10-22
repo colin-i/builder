@@ -21,6 +21,8 @@ typedef struct _GtkApplication GtkApplication;
 typedef struct _GtkBox GtkBox;
 typedef struct _GtkCellRenderer GtkCellRenderer;
 typedef struct _GtkDialog GtkDialog;
+typedef struct _GtkEntry GtkEntry;
+typedef struct _GtkEntryBuffer GtkEntryBuffer;
 typedef struct _GtkFrame GtkFrame;
 typedef struct _GtkListStore GtkListStore;
 typedef struct _GtkScrolledWindow GtkScrolledWindow;
@@ -29,6 +31,7 @@ typedef struct _GtkTextIter GtkTextIter;
 typedef struct _GtkTextView GtkTextView;
 typedef struct _GtkTreeIter GtkTreeIter;
 typedef struct _GtkTreePath GtkTreePath;
+typedef struct _GtkTreeSelection GtkTreeSelection;
 typedef struct _GtkTreeView GtkTreeView;
 typedef struct _GtkTreeViewColumn GtkTreeViewColumn;
 typedef struct _GtkTreeModel GtkTreeModel;
@@ -53,7 +56,7 @@ typedef enum{  GTK_DIALOG_MODAL = 1 << 0,  GTK_DIALOG_DESTROY_WITH_PARENT = 1 <<
  GtkDialogFlags;
 typedef enum{GTK_ORIENTATION_HORIZONTAL,GTK_ORIENTATION_VERTICAL}
  GtkOrientation;
-typedef enum{  GTK_RESPONSE_NONE = -1}
+typedef enum{GTK_RESPONSE_NONE = -1,GTK_RESPONSE_OK = -5}
  GtkResponseType;
 
 #define G_CALLBACK(f) ((GCallback) (f))
@@ -114,7 +117,11 @@ GtkWidget* gtk_button_new_with_label (const char *label);
 GtkCellRenderer *gtk_cell_renderer_text_new (void);
 GtkWidget * gtk_dialog_get_content_area (GtkDialog *dialog);
 GtkWidget* gtk_dialog_new_with_buttons (const char *title,GtkWindow *parent,GtkDialogFlags flags,const char *first_button_text,...) __attribute__((__sentinel__));
+const char * gtk_entry_buffer_get_text (GtkEntryBuffer *buffer);
+GtkEntryBuffer* gtk_entry_get_buffer (GtkEntry *entry);
+GtkWidget* gtk_entry_new (void);
 void gtk_list_store_append (GtkListStore *list_store, GtkTreeIter *iter);
+void gtk_list_store_insert_after (GtkListStore *list_store, GtkTreeIter *iter, GtkTreeIter *sibling);
 GtkListStore *gtk_list_store_new (int n_columns, ...);
 void gtk_list_store_set (GtkListStore *list_store,GtkTreeIter *iter,...);
 GtkWidget* gtk_scrolled_window_new (void);
@@ -128,9 +135,11 @@ void gtk_text_view_set_editable (GtkTextView *text_view,gboolean setting);
 void gtk_tree_model_get (GtkTreeModel *tree_model, GtkTreeIter *iter, ...);
 gboolean gtk_tree_model_get_iter_from_string (GtkTreeModel *tree_model,GtkTreeIter *iter,const gchar *path_string);
 char *gtk_tree_path_to_string (GtkTreePath *path);
+gboolean gtk_tree_selection_get_selected (GtkTreeSelection *selection,GtkTreeModel **model,GtkTreeIter *iter);
 gint gtk_tree_view_append_column (GtkTreeView *tree_view, GtkTreeViewColumn *column);
 GtkTreeViewColumn *gtk_tree_view_column_new_with_attributes (const gchar *title, GtkCellRenderer *cell, ...) __attribute__((__sentinel__));
 GtkTreeModel *gtk_tree_view_get_model (GtkTreeView *tree_view);
+GtkTreeSelection *gtk_tree_view_get_selection (GtkTreeView *tree_view);
 GtkWidget *gtk_tree_view_new (void);
 void gtk_tree_view_set_headers_visible (GtkTreeView *tree_view, gboolean headers_visible);
 void gtk_tree_view_set_model (GtkTreeView *tree_view, GtkTreeModel *model);

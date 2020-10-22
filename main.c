@@ -29,7 +29,7 @@ struct stk{
 	struct option options[number_of_options];
 	struct option options_proj[number_of_options_proj];
 	struct option options_proj_src[number_of_options_proj_src];
-	GtkWindow*main_win;
+	GtkWindow*main_win;GtkTreeView*tree;GtkWidget*entry_add;
 };
 enum{width_id,height_id,folder_id,file_id};
 enum{cdir_id,comp_id,dfile_id,dex_id,man_id,res_id,pakf_id,pak_id,upd_id
@@ -376,7 +376,7 @@ static void edit_call_man(struct stk*st){
 	const gchar*mf=json_object_get_string_member(object, st->options_proj[man_id].name);
 	edit_call_go(st,mf);
 }
-static void main_file(struct stk*st,GtkListStore*ls,GtkWidget*tree){
+static void main_file(struct stk*st,GtkListStore*ls){
 	st->json=json_parser_new();
 	json_parser_load_from_file(st->json,st->file,NULL);
 	JsonNode* root = json_parser_get_root(st->json);
@@ -404,7 +404,38 @@ static void main_file(struct stk*st,GtkListStore*ls,GtkWidget*tree){
 		gtk_list_store_append(ls,&it);
 		gtk_list_store_set(ls, &it, LIST_ITEM, src, -1);
 	}
-	g_signal_connect_data(tree,"row-activated",G_CALLBACK (edit_call),st,NULL,(GConnectFlags)0);
+	g_signal_connect_data((GtkWidget*)st->tree,"row-activated",G_CALLBACK (edit_call),st,NULL,(GConnectFlags)0);
+}
+static void list_add_response(GtkDialog *dialog,gint response,struct stk*st){
+	if(response==GTK_RESPONSE_OK){
+		const char*text=gtk_entry_buffer_get_text(gtk_entry_get_buffer((GtkEntry*)st->entry_add));
+		GtkTreeModel*mod;GtkTreeIter it;
+		GtkTreeSelection *sel=gtk_tree_view_get_selection(st->tree);
+		gtk_tree_selection_get_selected (sel,&mod,&it);
+		GtkTreeIter i2;
+		gtk_list_store_insert_after((GtkListStore*)mod,&i2,&it);
+		gtk_list_store_set((GtkListStore*)mod,&i2,LIST_ITEM,text,-1);
+		//
+		JsonNode*root = json_parser_get_root(st->jsons);
+		JsonArray*ar=json_node_get_array(root);
+		JsonObject*obj=json_object_new();
+		json_object_set_string_member(obj,st->options_proj_src[classp_id].name,"");
+		json_object_set_string_member(obj,st->options_proj_src[src_id].name,text);
+		json_array_add_object_element(ar,obj);
+		save_json(st);
+	}
+	gtk_window_destroy((GtkWindow*)dialog);
+}
+static void list_add(struct stk*st){
+	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Add",
+			    st->main_win, (GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL),
+			    "_OK",GTK_RESPONSE_OK,NULL);
+	st->entry_add = gtk_entry_new();
+	g_signal_connect_data (dialog,"response",G_CALLBACK (list_add_response),
+	                       st,NULL,(GConnectFlags)0);
+	GtkWidget*box=gtk_dialog_get_content_area((GtkDialog*)dialog);
+	gtk_box_append((GtkBox*)box, st->entry_add);
+	gtk_widget_show(dialog);
 }
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
@@ -431,22 +462,23 @@ static void activate(GtkApplication* app,struct stk*st){
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (g_application_quit),app,NULL,G_CONNECT_SWAPPED);
 	//
-	GtkWidget *tree=gtk_tree_view_new();
+	st->tree=(GtkTreeView*)gtk_tree_view_new();
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("", renderer, "text", LIST_ITEM, NULL);
 	GtkListStore*ls= gtk_list_store_new(N_COLUMNS, G_TYPE_STRING);
-	gtk_tree_view_set_headers_visible((GtkTreeView*)tree,FALSE);
-	gtk_tree_view_append_column((GtkTreeView*)tree, column);
-	gtk_tree_view_set_model((GtkTreeView*)tree, (GtkTreeModel*)ls);
+	gtk_tree_view_set_headers_visible(st->tree,FALSE);
+	gtk_tree_view_append_column(st->tree, column);
+	gtk_tree_view_set_model(st->tree, (GtkTreeModel*)ls);
 	g_object_unref(ls);
 	GtkWidget*scroll = gtk_scrolled_window_new ();
-	gtk_scrolled_window_set_child ((GtkScrolledWindow*)scroll,tree);
+	gtk_scrolled_window_set_child ((GtkScrolledWindow*)scroll,(GtkWidget*)st->tree);
 	//
-	main_file(st,ls,tree);
+	main_file(st,ls);
 	//
 	GtkWidget*list_b=gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
 	b=gtk_button_new_with_label("+");
 	gtk_box_append((GtkBox*)list_b,b);
+	g_signal_connect_data (b, "clicked",G_CALLBACK (list_add),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("-");
 	gtk_box_append((GtkBox*)list_b,b);
 	b=gtk_button_new_with_label("\u2191");
