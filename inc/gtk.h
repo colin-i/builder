@@ -7,6 +7,7 @@ typedef unsigned int guint;
 typedef gsize GType;
 typedef unsigned long gulong;
 typedef void* gpointer;
+typedef const void *gconstpointer;
 __extension__ typedef signed long long gint64;
 
 typedef struct _GApplication GApplication;
@@ -16,6 +17,7 @@ typedef struct _GError GError;
 typedef struct _GFile GFile;
 typedef struct _GFileEnumerator GFileEnumerator;
 typedef struct _GFileInfo GFileInfo;
+typedef struct _GList GList;
 typedef struct _GdkEvent GdkEvent;
 typedef struct _GtkApplication GtkApplication;
 typedef struct _GtkBox GtkBox;
@@ -67,6 +69,12 @@ typedef enum{GTK_RESPONSE_NONE = -1,GTK_RESPONSE_OK = -5}
 #define G_TYPE_MAKE_FUNDAMENTAL(x) ((GType) ((x) << G_TYPE_FUNDAMENTAL_SHIFT))
 #define G_TYPE_STRING G_TYPE_MAKE_FUNDAMENTAL (16)
 
+struct _GList
+{
+  gpointer data;
+  GList *next;
+  GList *prev;
+};
 struct _GtkTextIter {
   gpointer dummy1;
   gpointer dummy2;
@@ -105,6 +113,11 @@ const char * g_file_info_get_name (GFileInfo *info);
 GFile * g_file_new_for_path (const char *path);
 GFileInfo * g_file_query_info (GFile *file,const char *attributes,GFileQueryInfoFlags flags,GCancellable *cancellable,GError **error);
 void g_free (gpointer mem);
+void g_list_free (GList *list);
+GList* g_list_insert (GList *list, gpointer data, gint position) __attribute__((warn_unused_result));
+#define g_list_next(list) ((list) ? (((GList *)(list))->next) : NULL)
+gpointer g_list_nth_data (GList *list,guint n);
+GList* g_list_remove (GList *list, gconstpointer data) __attribute__((warn_unused_result));
 gpointer g_malloc (gsize n_bytes) __attribute__((__malloc__)) __attribute__((__alloc_size__(1)));
 void g_object_unref (gpointer object);
 gpointer g_realloc(gpointer mem,gsize n_bytes);
@@ -123,7 +136,9 @@ GtkWidget* gtk_entry_new (void);
 void gtk_list_store_append (GtkListStore *list_store, GtkTreeIter *iter);
 void gtk_list_store_insert_after (GtkListStore *list_store, GtkTreeIter *iter, GtkTreeIter *sibling);
 GtkListStore *gtk_list_store_new (int n_columns, ...);
+gboolean gtk_list_store_remove (GtkListStore *list_store, GtkTreeIter *iter);
 void gtk_list_store_set (GtkListStore *list_store,GtkTreeIter *iter,...);
+void gtk_list_store_swap (GtkListStore *store,GtkTreeIter *a,GtkTreeIter *b);
 GtkWidget* gtk_scrolled_window_new (void);
 void gtk_scrolled_window_set_child (GtkScrolledWindow *scrolled_window, GtkWidget *child);
 void gtk_text_buffer_insert (GtkTextBuffer *buffer,GtkTextIter *iter,const char *text,int len);
@@ -134,6 +149,11 @@ GtkWidget * gtk_text_view_new (void);
 void gtk_text_view_set_editable (GtkTextView *text_view,gboolean setting);
 void gtk_tree_model_get (GtkTreeModel *tree_model, GtkTreeIter *iter, ...);
 gboolean gtk_tree_model_get_iter_from_string (GtkTreeModel *tree_model,GtkTreeIter *iter,const gchar *path_string);
+GtkTreePath * gtk_tree_model_get_path (GtkTreeModel *tree_model,GtkTreeIter *iter);
+gboolean gtk_tree_model_iter_previous (GtkTreeModel *tree_model,GtkTreeIter *iter);
+gboolean gtk_tree_model_iter_next (GtkTreeModel *tree_model,GtkTreeIter *iter);
+void gtk_tree_path_free (GtkTreePath *path);
+int *gtk_tree_path_get_indices (GtkTreePath *path);
 char *gtk_tree_path_to_string (GtkTreePath *path);
 gboolean gtk_tree_selection_get_selected (GtkTreeSelection *selection,GtkTreeModel **model,GtkTreeIter *iter);
 gint gtk_tree_view_append_column (GtkTreeView *tree_view, GtkTreeViewColumn *column);

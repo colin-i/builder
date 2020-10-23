@@ -437,6 +437,66 @@ static void list_add(struct stk*st){
 	gtk_box_append((GtkBox*)box, st->entry_add);
 	gtk_widget_show(dialog);
 }
+static int get_pos_from_model(GtkTreeModel*mod,GtkTreeIter*it){
+	GtkTreePath * path = gtk_tree_model_get_path ( mod , it ) ;
+	int i= (gtk_tree_path_get_indices ( path ))[0] ;
+	gtk_tree_path_free(path);
+	return i;
+}
+static void list_del(struct stk*st){
+	GtkTreeModel*mod;GtkTreeIter it;GtkTreeSelection*sl;
+	sl=gtk_tree_view_get_selection(st->tree);
+	if(gtk_tree_selection_get_selected (sl,&mod,&it)){
+		int i=get_pos_from_model(mod,&it);
+		JsonNode*root = json_parser_get_root(st->jsons);
+		JsonArray*ar=json_node_get_array(root);
+		json_array_remove_element(ar,i);
+		save_json(st);
+		gtk_list_store_remove ((GtkListStore*)mod,&it);
+	}
+}
+static void list_move(struct stk*st,int x,int a){
+	JsonNode*root = json_parser_get_root(st->jsons);
+	JsonArray*ar=json_node_get_array(root);
+	guint n=json_array_get_length(ar);
+	JsonArray*arr=json_array_sized_new(n);
+	GList*list=json_array_get_elements(ar);
+	gpointer p=g_list_nth_data(list,x);
+	list=g_list_remove(list,p);
+	list=g_list_insert(list,p,x+a);
+	GList*lst=list;
+	for(;;){
+		JsonNode*nd=json_node_copy(lst->data);
+		json_array_add_element(arr,nd);
+		lst=g_list_next(lst);
+		if(lst==NULL)break;
+	}
+	g_list_free(list);
+	json_node_take_array(root,arr);//without copy,here is critical unrefing old elements
+	save_json(st);
+}
+static void list_up(struct stk*st){
+	GtkTreeModel*mod;GtkTreeIter it;
+	GtkTreeSelection *sel=gtk_tree_view_get_selection(st->tree);
+	gtk_tree_selection_get_selected (sel,&mod,&it);
+	GtkTreeIter i2=it;
+	if(gtk_tree_model_iter_previous(mod,&i2)){
+		int i=get_pos_from_model(mod,&it);
+		list_move(st,i,-1);
+		gtk_list_store_swap((GtkListStore*)mod,&it,&i2);
+	}
+}
+static void list_down(struct stk*st){
+	GtkTreeModel*mod;GtkTreeIter it;
+	GtkTreeSelection *sel=gtk_tree_view_get_selection(st->tree);
+	gtk_tree_selection_get_selected (sel,&mod,&it);
+	GtkTreeIter i2=it;
+	if(gtk_tree_model_iter_next(mod,&i2)){
+		int i=get_pos_from_model(mod,&it);
+		list_move(st,i,1);
+		gtk_list_store_swap((GtkListStore*)mod,&it,&i2);
+	}
+}
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
 	st->main_win=(GtkWindow*)window;
@@ -481,10 +541,13 @@ static void activate(GtkApplication* app,struct stk*st){
 	g_signal_connect_data (b, "clicked",G_CALLBACK (list_add),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("-");
 	gtk_box_append((GtkBox*)list_b,b);
+	g_signal_connect_data (b, "clicked",G_CALLBACK (list_del),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("\u2191");
 	gtk_box_append((GtkBox*)list_b,b);
+	g_signal_connect_data (b, "clicked",G_CALLBACK (list_up),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("\u2193");
 	gtk_box_append((GtkBox*)list_b,b);
+	g_signal_connect_data (b, "clicked",G_CALLBACK (list_down),st,NULL,G_CONNECT_SWAPPED);
 	GtkWidget*list_box=gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
 	gtk_box_append((GtkBox*)list_box,scroll);
 	gtk_box_append((GtkBox*)list_box,list_b);
