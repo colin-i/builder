@@ -34,13 +34,13 @@ struct stk{
 enum{width_id,height_id,folder_id,file_id};
 enum{cdir_id,comp_id,dfile_id,dex_id,man_id,res_id,pakf_id,pak_id,upd_id
 	,sigf_id,sig_id,inst_id,times_id,edit_id,srcs_id};
-enum{classp_id,src_id};
-#define help_text "Launch the program with the file options.\n\
-e.g. builder example.json"
 enum {
-  LIST_ITEM = 0,
+  SRC_ITEM = 0,
+  CLASS_ITEM = 1,
   N_COLUMNS
 };
+#define help_text "Launch the program with the file options.\n\
+e.g. builder example.json"
 
 static void help_popup(struct stk*st){
 	GtkWidget *dialog = gtk_dialog_new_with_buttons ("Help",
@@ -190,8 +190,8 @@ static bool proj_compile(JsonObject*object,char**p,int*size,struct stk*st,JsonOb
 	guint n=json_array_get_length(a);
 	for(guint i=0;i<n;i++){
 		JsonObject*s=json_array_get_object_element(a,i);
-		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
-		const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[classp_id].name);
+		const gchar*src=json_object_get_string_member(s,st->options_proj_src[SRC_ITEM].name);
+		const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[CLASS_ITEM].name);
 		int sz=snprintf(NULL,0,c,d,classpath,src);
 		if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
 		sprintf(*p,c,d,classpath,src);
@@ -210,9 +210,9 @@ static int proj_compile_mod(JsonObject*object,char**p,int*size,struct stk*st,Jso
 	bool good=TRUE;bool mod=FALSE;
 	for(guint i=0;i<n;i++){
 		JsonObject*s=json_array_get_object_element(a,i);
-		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
+		const gchar*src=json_object_get_string_member(s,st->options_proj_src[SRC_ITEM].name);
 		if(file_is_mod(src,tobj)){
-			const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[classp_id].name);
+			const gchar*classpath=json_object_get_string_member(s,st->options_proj_src[CLASS_ITEM].name);
 			int sz=snprintf(NULL,0,c,d,classpath,src);
 			if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
 			sprintf(*p,c,d,classpath,src);
@@ -355,21 +355,6 @@ static void edit_call_go(struct stk*st,const char*item_text){
 	systemverb(a);
 	g_free(a);
 }
-static void edit_call(GtkTreeView       *tree_view,
-               GtkTreePath       *path,
-               GtkTreeViewColumn *ignored,
-               struct stk*st){
-	(void)ignored;
-	char*str=gtk_tree_path_to_string(path);
-	GtkTreeIter iterator;
-	GtkTreeModel*model=gtk_tree_view_get_model(tree_view);
-	gtk_tree_model_get_iter_from_string(model,&iterator,str);
-	char*item_text;
-	gtk_tree_model_get (model, &iterator, LIST_ITEM, &item_text, -1);
-	edit_call_go(st,item_text);
-	g_free(item_text);
-	g_free(str);
-}
 static void edit_call_man(struct stk*st){
 	JsonNode* root = json_parser_get_root(st->jsonp);
 	JsonObject *object = json_node_get_object(root);
@@ -399,12 +384,23 @@ static void main_file(struct stk*st,GtkListStore*ls){
 	guint n=json_array_get_length(a);
 	for(guint i=0;i<n;i++){
 		JsonObject*s=json_array_get_object_element(a,i);
-		const gchar*src=json_object_get_string_member(s,st->options_proj_src[src_id].name);
+		const gchar*src=json_object_get_string_member(s,st->options_proj_src[SRC_ITEM].name);
+		const gchar*cp=json_object_get_string_member(s,st->options_proj_src[CLASS_ITEM].name);
 		GtkTreeIter it;
 		gtk_list_store_append(ls,&it);
-		gtk_list_store_set(ls, &it, LIST_ITEM, src, -1);
+		gtk_list_store_set(ls, &it, SRC_ITEM, src, CLASS_ITEM, cp, -1);
 	}
-	g_signal_connect_data((GtkWidget*)st->tree,"row-activated",G_CALLBACK (edit_call),st,NULL,(GConnectFlags)0);
+	//cannot click on editable columns g_signal_connect_data((GtkWidget*)st->tree,"row-activated",G_CALLBACK (edit_call),st,NULL,(GConnectFlags)0);
+}
+static void list_edit(struct stk*st){
+	GtkTreeModel*mod;GtkTreeIter it;GtkTreeSelection*sl;
+	sl=gtk_tree_view_get_selection(st->tree);
+	if(gtk_tree_selection_get_selected (sl,&mod,&it)){
+		char*item_text;
+		gtk_tree_model_get (mod, &it, SRC_ITEM, &item_text, -1);
+		edit_call_go(st,item_text);
+		g_free(item_text);	
+	}
 }
 static void list_add_response(GtkDialog *dialog,gint response,struct stk*st){
 	if(response==GTK_RESPONSE_OK){
@@ -414,13 +410,13 @@ static void list_add_response(GtkDialog *dialog,gint response,struct stk*st){
 		gtk_tree_selection_get_selected (sel,&mod,&it);
 		GtkTreeIter i2;
 		gtk_list_store_insert_after((GtkListStore*)mod,&i2,&it);
-		gtk_list_store_set((GtkListStore*)mod,&i2,LIST_ITEM,text,-1);
+		gtk_list_store_set((GtkListStore*)mod,&i2,SRC_ITEM,text,CLASS_ITEM,"",-1);
 		//
 		JsonNode*root = json_parser_get_root(st->jsons);
 		JsonArray*ar=json_node_get_array(root);
 		JsonObject*obj=json_object_new();
-		json_object_set_string_member(obj,st->options_proj_src[classp_id].name,"");
-		json_object_set_string_member(obj,st->options_proj_src[src_id].name,text);
+		json_object_set_string_member(obj,st->options_proj_src[CLASS_ITEM].name,"");
+		json_object_set_string_member(obj,st->options_proj_src[SRC_ITEM].name,text);
 		json_array_add_object_element(ar,obj);
 		save_json(st);
 	}
@@ -497,6 +493,23 @@ static void list_down(struct stk*st){
 		gtk_list_store_swap((GtkListStore*)mod,&it,&i2);
 	}
 }
+static void cell_edited(struct stk*st,gchar *path,gchar *new_text, int n){
+	GtkTreeModel*mod=gtk_tree_view_get_model(st->tree);
+	GtkTreeIter iter;
+	gtk_tree_model_get_iter_from_string(mod,&iter,path);
+	gtk_list_store_set((GtkListStore*)mod, &iter, n, new_text, -1);
+	//
+	int i=get_pos_from_model(mod,&iter);
+	JsonNode*root = json_parser_get_root(st->jsons);
+	JsonArray*ar=json_node_get_array(root);
+	JsonObject*s=json_array_get_object_element(ar,i);
+	json_object_set_string_member(s,st->options_proj_src[n].name,new_text);
+	save_json(st);
+}
+static void cell_edited_1(struct stk*st,gchar *path,gchar *new_text){
+	cell_edited(st,path,new_text,SRC_ITEM);}
+static void cell_edited_2(struct stk*st,gchar *path,gchar *new_text){
+	cell_edited(st,path,new_text,CLASS_ITEM);}
 static void activate(GtkApplication* app,struct stk*st){
 	GtkWidget *window = gtk_application_window_new (app);
 	st->main_win=(GtkWindow*)window;
@@ -509,9 +522,6 @@ static void activate(GtkApplication* app,struct stk*st){
 	b=gtk_button_new_with_label("Rebuild");
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (rebuild_proj),st,NULL,G_CONNECT_SWAPPED);
-	b=gtk_button_new_with_label("Save");
-	gtk_box_append((GtkBox*)box,b);
-	g_signal_connect_data (b, "clicked",G_CALLBACK (save_json),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("Manifest");
 	gtk_box_append((GtkBox*)box,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (edit_call_man),st,NULL,G_CONNECT_SWAPPED);
@@ -523,11 +533,20 @@ static void activate(GtkApplication* app,struct stk*st){
 	g_signal_connect_data (b, "clicked",G_CALLBACK (g_application_quit),app,NULL,G_CONNECT_SWAPPED);
 	//
 	st->tree=(GtkTreeView*)gtk_tree_view_new();
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("", renderer, "text", LIST_ITEM, NULL);
-	GtkListStore*ls= gtk_list_store_new(N_COLUMNS, G_TYPE_STRING);
-	gtk_tree_view_set_headers_visible(st->tree,FALSE);
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *column;
+	renderer = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes("", renderer, "text", SRC_ITEM, NULL);
 	gtk_tree_view_append_column(st->tree, column);
+	g_object_set(renderer, "editable", TRUE, NULL);
+	g_signal_connect_data (renderer, "edited",G_CALLBACK (cell_edited_1),st,NULL,G_CONNECT_SWAPPED);
+	renderer = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes("", renderer, "text", CLASS_ITEM, NULL);
+	gtk_tree_view_append_column(st->tree, column);
+	g_object_set(renderer, "editable", TRUE, NULL);
+	g_signal_connect_data (renderer, "edited",G_CALLBACK (cell_edited_2),st,NULL,G_CONNECT_SWAPPED);
+	gtk_tree_view_set_headers_visible(st->tree,FALSE);
+	GtkListStore*ls= gtk_list_store_new(N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING);
 	gtk_tree_view_set_model(st->tree, (GtkTreeModel*)ls);
 	g_object_unref(ls);
 	GtkWidget*scroll = gtk_scrolled_window_new ();
@@ -536,6 +555,9 @@ static void activate(GtkApplication* app,struct stk*st){
 	main_file(st,ls);
 	//
 	GtkWidget*list_b=gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+	b=gtk_button_new_with_label("\u270E");
+	gtk_box_append((GtkBox*)list_b,b);
+	g_signal_connect_data (b, "clicked",G_CALLBACK (list_edit),st,NULL,G_CONNECT_SWAPPED);
 	b=gtk_button_new_with_label("+");
 	gtk_box_append((GtkBox*)list_b,b);
 	g_signal_connect_data (b, "clicked",G_CALLBACK (list_add),st,NULL,G_CONNECT_SWAPPED);
@@ -591,8 +613,8 @@ int main(int argc,char**argv){
 	st.options_proj[times_id].name="timestamp_file";st.options_proj[times_id].help="Timestamps file";
 	st.options_proj[edit_id].name="edit";st.options_proj[edit_id].help="Edit call format";
 	st.options_proj[srcs_id].name="sources";st.options_proj[srcs_id].help="Sources for the compiler";
-	st.options_proj_src[classp_id].name="classpath";st.options_proj_src[classp_id].help="Classpath at compiler";
-	st.options_proj_src[src_id].name="source";st.options_proj_src[src_id].help="Source at compiler";
+	st.options_proj_src[SRC_ITEM].name="source";st.options_proj_src[SRC_ITEM].help="Source at compiler";
+	st.options_proj_src[CLASS_ITEM].name="classpath";st.options_proj_src[CLASS_ITEM].help="Classpath at compiler";
 	GtkApplication *app;
 	app = gtk_application_new (NULL, G_APPLICATION_HANDLES_COMMAND_LINE);//G_APPLICATION_FLAGS_NONE
 	g_signal_connect_data (app, "activate", G_CALLBACK (activate), &st, NULL, (GConnectFlags) 0);

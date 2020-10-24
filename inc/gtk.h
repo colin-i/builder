@@ -119,6 +119,7 @@ GList* g_list_insert (GList *list, gpointer data, gint position) __attribute__((
 gpointer g_list_nth_data (GList *list,guint n);
 GList* g_list_remove (GList *list, gconstpointer data) __attribute__((warn_unused_result));
 gpointer g_malloc (gsize n_bytes) __attribute__((__malloc__)) __attribute__((__alloc_size__(1)));
+void g_object_set (gpointer object,const gchar *first_property_name,...) __attribute__((__sentinel__));
 void g_object_unref (gpointer object);
 gpointer g_realloc(gpointer mem,gsize n_bytes);
 gulong g_signal_connect_data (gpointer instance,const gchar *detailed_signal,GCallback c_handler,gpointer data,GClosureNotify destroy_data,GConnectFlags con);
@@ -154,7 +155,6 @@ gboolean gtk_tree_model_iter_previous (GtkTreeModel *tree_model,GtkTreeIter *ite
 gboolean gtk_tree_model_iter_next (GtkTreeModel *tree_model,GtkTreeIter *iter);
 void gtk_tree_path_free (GtkTreePath *path);
 int *gtk_tree_path_get_indices (GtkTreePath *path);
-char *gtk_tree_path_to_string (GtkTreePath *path);
 gboolean gtk_tree_selection_get_selected (GtkTreeSelection *selection,GtkTreeModel **model,GtkTreeIter *iter);
 gint gtk_tree_view_append_column (GtkTreeView *tree_view, GtkTreeViewColumn *column);
 GtkTreeViewColumn *gtk_tree_view_column_new_with_attributes (const gchar *title, GtkCellRenderer *cell, ...) __attribute__((__sentinel__));
