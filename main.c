@@ -21,7 +21,7 @@ struct option{
 	char*help;
 };
 #define number_of_options 4
-#define number_of_options_proj 15
+#define number_of_options_proj 16
 #define number_of_options_proj_src 2
 struct stk{
 	char*file;
@@ -32,7 +32,7 @@ struct stk{
 	GtkWindow*main_win;GtkTreeView*tree;GtkWidget*entry_add;
 };
 enum{width_id,height_id,folder_id,file_id};
-enum{cdir_id,comp_id,dfile_id,dex_id,man_id,res_id,pakf_id,pak_id,upd_id
+enum{cdir_id,comp_id,dfile_id,dex_id,man_id,res_id,pakf_id,dbg_id,pak_id,upd_id
 	,sigf_id,sig_id,inst_id,times_id,edit_id,srcs_id};
 enum {
   SRC_ITEM = 0,
@@ -243,9 +243,10 @@ static bool proj_pak(JsonObject*object,char**p,int*size,struct stk*st,JsonObject
 	const gchar*rd=json_object_get_string_member(object, st->options_proj[res_id].name);
 	const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
 	const gchar*pk=json_object_get_string_member(object,st->options_proj[pak_id].name);
-	int sz=snprintf(NULL,0,pk,mf,rd,pf);
+	const gchar*dg=json_object_get_string_member(object,st->options_proj[dbg_id].name);
+	int sz=snprintf(NULL,0,pk,mf,rd,pf,dg);
 	if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
-	sprintf(*p,pk,mf,rd,pf);
+	sprintf(*p,pk,mf,rd,pf,dg);
 	if(systemverb(*p)==EXIT_SUCCESS){
 		file_stamp(mf,gen_obj);
 		dir_stamp(rd,gen_obj);
@@ -259,9 +260,10 @@ static int proj_pak_mod(JsonObject*object,char**p,int*size,struct stk*st,JsonObj
 	if(file_is_mod(mf,tobj)||dir_is_mod(rd,tobj)){
 		const gchar*pf=json_object_get_string_member(object,st->options_proj[pakf_id].name);
 		const gchar*pk=json_object_get_string_member(object,st->options_proj[pak_id].name);
-		int sz=snprintf(NULL,0,pk,mf,rd,pf);
+		const gchar*dg=json_object_get_string_member(object,st->options_proj[dbg_id].name);
+		int sz=snprintf(NULL,0,pk,mf,rd,pf,dg);
 		if(sz>*size){*p=(char*)g_realloc(*p,sz+1);*size=sz;}
-		sprintf(*p,pk,mf,rd,pf);
+		sprintf(*p,pk,mf,rd,pf,dg);
 		if(systemverb(*p)==EXIT_SUCCESS){
 			file_stamp(mf,gen_obj);
 			dir_stamp(rd,gen_obj);
@@ -605,6 +607,7 @@ int main(int argc,char**argv){
 	st.options_proj[man_id].name="man_file";st.options_proj[man_id].help="Manifest file";
 	st.options_proj[res_id].name="res_dir";st.options_proj[res_id].help="Resources directory";
 	st.options_proj[pakf_id].name="pak_file";st.options_proj[pakf_id].help="Package file";
+	st.options_proj[dbg_id].name="debug";st.options_proj[dbg_id].help="Debug code";
 	st.options_proj[pak_id].name="pak";st.options_proj[pak_id].help="Package call format";
 	st.options_proj[upd_id].name="update";st.options_proj[upd_id].help="Update call format";
 	st.options_proj[sigf_id].name="sign_file";st.options_proj[sigf_id].help="Sign package file";
