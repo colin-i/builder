@@ -47,7 +47,7 @@ static void help_popup(struct stk*st){
 			st->main_win, (GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL),
 			"_OK",GTK_RESPONSE_NONE,NULL);
 	int w;int h;
-	gtk_window_get_size (st->main_win,&w,&h);
+	gtk_window_get_default_size (st->main_win,&w,&h);
 	gtk_window_set_default_size((GtkWindow*)dialog,w,h);
 	g_signal_connect_data (dialog,"response",G_CALLBACK (gtk_window_destroy),
 		NULL,NULL,(GConnectFlags)0);

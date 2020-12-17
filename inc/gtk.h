@@ -170,6 +170,6 @@ void gtk_widget_set_valign (GtkWidget *widget,GtkAlign align);
 void gtk_widget_set_vexpand (GtkWidget *widget,gboolean expand);
 void gtk_widget_show (GtkWidget *widget);
 void gtk_window_destroy (GtkWindow *window);
-void gtk_window_get_size (GtkWindow *window,int *width,int *height);
+void gtk_window_get_default_size (GtkWindow *window,int *width,int *height);
 void gtk_window_set_child (GtkWindow *window,GtkWidget *child);
 void gtk_window_set_title (GtkWindow *window, const char *title);
