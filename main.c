@@ -401,7 +401,7 @@ static void list_edit(struct stk*st){
 		char*item_text;
 		gtk_tree_model_get (mod, &it, SRC_ITEM, &item_text, -1);
 		edit_call_go(st,item_text);
-		g_free(item_text);	
+		g_free(item_text);
 	}
 }
 static void list_add_response(GtkDialog *dialog,gint response,struct stk*st){
