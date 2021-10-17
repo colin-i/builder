@@ -595,6 +595,10 @@ command_line (GApplication *a)//,GApplicationCommandLine *cmdline
 }
 int main(int argc,char**argv){
 	struct stk st;
+	if(argc!=2){
+		printf("Error: one argument, the file argument, example.json for test\n");
+		return EXIT_FAILURE;
+	}
 	st.file=argv[1];
 	st.options[width_id].name="width";st.options[width_id].help="Window width in pixels";
 	st.options[height_id].name="height";st.options[height_id].help="Window height in pixels";
