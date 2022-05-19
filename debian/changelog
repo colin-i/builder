@@ -1,0 +1,18 @@
+builder (1-jammy2) jammy; urgency=medium
+
+  * more bdeps required
+
+ -- pi <pi@pi-desktop>  Sun, 17 Oct 2021 16:11:59 +0300
+
+builder (1-jammy1) jammy; urgency=medium
+
+  * bdeps required
+
+ -- pi <pi@pi-desktop>  Sun, 17 Oct 2021 15:58:12 +0300
+
+builder (1-1) jammy; urgency=low
+
+  * Initial release. Closes: #nnnn
+    <nnnn is the bug number of your ITP>
+
+ -- Botescu Costin <costin.botescu@gmail.com>  Sun, 17 Oct 2021 14:41:30 +0300

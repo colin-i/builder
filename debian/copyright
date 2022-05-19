@@ -1,0 +1,45 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: builder
+Upstream-Contact: <preferred name and address to reach the upstream project>
+Source: <url://example.com>
+#
+# Please double check copyright with the licensecheck(1) command.
+
+Files:     .gitignore
+           README.md
+           example.json
+           inc/gtk.h
+           inc/json.h
+           inc/stdbool.h
+           inc/stdio.h
+           inc/stdlib.h
+           inc/unistd.h
+           main.c
+           meson.build
+           meson_options.txt
+           test/bin/classes.dex
+           test/certificate.pem
+           test/example.apk
+           test/example_prog.json
+           test/key.pk8
+           test/obj/example/test/MainActivity$1.class
+           test/obj/example/test/MainActivity.class
+           test/res/mipmap-hdpi/ic_launcher.png
+           test/res/mipmap-mdpi/ic_launcher.png
+           test/res/mipmap-xhdpi/ic_launcher.png
+           test/res/mipmap-xxhdpi/ic_launcher.png
+           test/res/mipmap-xxxhdpi/ic_launcher.png
+           test/sources.json
+           test/src/MainActivity.java
+           test/test.apk
+           test/timestamp.json
+Copyright: __NO_COPYRIGHT_NOR_LICENSE__
+License:   __NO_COPYRIGHT_NOR_LICENSE__
+
+#----------------------------------------------------------------------------
+# xml and html files (skipped):
+#         test/AndroidManifest.xml
+
+#----------------------------------------------------------------------------
+# Files marked as NO_LICENSE_TEXT_FOUND may be covered by the following
+# license/copyright files.
