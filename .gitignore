@@ -2,3 +2,5 @@
 classes.dex
 *.apk
 test/timestamp.json
+.pc/
+debian/patches/
